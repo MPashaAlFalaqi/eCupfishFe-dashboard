@@ -1,0 +1,25 @@
+@tailwind base;@tailwind components;@tailwind utilities;
+body{@apply bg-surface text-primary-900 antialiased;}
+@layer components{
+  .input{@apply w-full rounded-lg border border-primary-100 bg-white px-3 py-2.5 text-base placeholder:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400;}
+  .label{@apply mb-1.5 block text-sm font-medium text-primary-700;}
+}
+
+/* Animasi masuk halaman: tiap blok muncul bergantian */
+.page-enter > *:not(.fixed) { animation: rise .5s cubic-bezier(.2,.7,.2,1) backwards; }
+.page-enter > *:nth-child(2) { animation-delay: 60ms; }
+.page-enter > *:nth-child(3) { animation-delay: 120ms; }
+.page-enter > *:nth-child(4) { animation-delay: 180ms; }
+.page-enter > *:nth-child(5) { animation-delay: 240ms; }
+.page-enter > *:nth-child(n+6) { animation-delay: 300ms; }
+.stat-card { animation: rise .5s cubic-bezier(.2,.7,.2,1) backwards; }
+.stat-card:nth-child(1) { animation-delay: 100ms; } .stat-card:nth-child(2) { animation-delay: 160ms; }
+.stat-card:nth-child(3) { animation-delay: 220ms; } .stat-card:nth-child(4) { animation-delay: 280ms; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
+}
+
+@media print {
+  body { background: #fff !important; }
+  .page-enter > *, .stat-card { animation: none !important; }
+}
