@@ -11,9 +11,9 @@ membalas chat dan ulasan pembeli, serta memantau pembayaran dan laporan keuangan
 
 | Nama | NIM | Peran |
 |------|-----|-------|
-| M PASHA AL FALAQI | 253140701111028 | frontend dev
-| James Martyno Susanto | | |
-| Muktabar zaki pramana | | |
+| M PASHA AL FALAQI | 253140701111028 | frontend dev,slicing
+| James Martyno Susanto | 253140701111041 | |
+| Muktabar zaki pramana | 253140701111016 | |
 
 
 
@@ -57,8 +57,8 @@ membalas chat dan ulasan pembeli, serta memantau pembayaran dan laporan keuangan
 ```bash
 # 1. Unduh proyek
 git clone https://github.com/MPashaAlFalaqi/eCupfish-dashboard.git
-cd NAMA-REPO
-
+cd eCupfish-dashboard
+ 
 # 2. Pasang dependensi
 npm install
 

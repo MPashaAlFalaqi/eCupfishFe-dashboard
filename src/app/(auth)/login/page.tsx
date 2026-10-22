@@ -1,4 +1,5 @@
 import AuthPanel from "@/components/AuthPanel";
+import MobileBrand from "@/components/MobileBrand";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
@@ -17,15 +18,15 @@ export default function LoginPage() {
           <div className="mt-8 flex gap-8"><div><b className="text-2xl">2.400+</b><p className="text-sm text-primary-300">Pembudidaya aktif</p></div><div><b className="text-2xl">18 Prov.</b><p className="text-sm text-primary-300">Jangkauan terbaik</p></div></div>
         </div>
       </AuthPanel>
-      <section className="grid place-items-center bg-white p-8">
+      <section className="grid place-items-center bg-white p-5 sm:p-8">
         <form className="w-full max-w-sm space-y-4">
+          <MobileBrand />
           <div><h1 className="text-2xl font-bold">Masuk ke akun Anda</h1><p className="text-sm text-primary-500">Kelola budidaya dan penjualan ikan Anda.</p></div>
           <div><label className="label">Email atau Username</label><input className="input" placeholder="nama@tambakanda.id" /></div>
           <div><label className="label">Kata Sandi</label><input className="input" type="password" placeholder="••••••••" /></div>
           <div className="flex justify-between text-sm"><label className="flex items-center gap-2"><input type="checkbox" defaultChecked />Ingat saya</label><Link href="/lupa-sandi" className="text-primary-500">Lupa kata sandi?</Link></div>
           <Link href="/dashboard" className="block"><Button className="w-full">Masuk ke Dashboard</Button></Link>
-          <div className="flex items-center gap-3 text-xs text-primary-300"><span className="h-px flex-1 bg-primary-100" />atau<span className="h-px flex-1 bg-primary-100" /></div>
-          <p className="text-center text-sm text-primary-500">Belum punya akun? <Link href="/register" className="font-semibold text-primary-600">Daftar sebagai pembudidaya</Link></p>
+          <p className="text-center text-sm text-primary-500">Akun dibuat dan dikelola oleh admin eCupFish.</p>
         </form>
       </section>
     </div>

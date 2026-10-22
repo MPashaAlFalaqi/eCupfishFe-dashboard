@@ -6,6 +6,7 @@ import clsx from "clsx";
 import FormField from "@/components/FormField";
 import Modal from "@/components/Modal";
 import { Button } from "@/components/ui";
+import MobileBrand from "@/components/MobileBrand"
 
 const EMAIL = /^\S+@\S+\.\S+$/, HP = /^(\+62|62|0)8\d{8,11}$/;
 const judul = ["Cari akun Anda", "Masukkan kode OTP", "Buat kata sandi baru"];
@@ -34,6 +35,7 @@ export default function LupaSandiForm() {
   };
   return (
     <div className="w-full max-w-sm space-y-4">
+      <MobileBrand />
       <Link href="/login" className="inline-flex items-center gap-1 text-sm text-primary-500"><ArrowLeft size={16} />Kembali ke login</Link>
       <div className="flex gap-1.5">{[0, 1, 2].map(i => <span key={i} className={clsx("h-1.5 flex-1 rounded-full", i <= step ? "bg-primary-400" : "bg-primary-100")} />)}</div>
       <div><p className="text-xs font-semibold uppercase tracking-wider text-primary-400">Langkah {step + 1} dari 3</p><h1 className="text-2xl font-bold">{judul[step]}</h1></div>

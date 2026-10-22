@@ -13,7 +13,7 @@ export default function LupaSandiPage() {
           <p className="mb-10 mt-3 max-w-md text-base text-primary-200">Pulihkan akses akun tambak Anda dalam 3 langkah mudah.</p>
         </div>
       </AuthPanel>
-      <section className="grid place-items-center bg-white p-8"><LupaSandiForm /></section>
+      <section className="grid place-items-center bg-white p-5 sm:p-8"><LupaSandiForm /></section>
     </div>
   );
 }

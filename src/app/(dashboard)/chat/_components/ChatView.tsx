@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Send } from "lucide-react";
+import { ArrowLeft, ImagePlus, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 import Topbar from "@/components/Topbar";
 import SearchInput from "@/components/SearchInput";
+import { FilterSelect } from "@/components/FilterBar";
 import { Card } from "@/components/ui";
 import type { Percakapan } from "@/lib/types";
 
@@ -14,24 +15,26 @@ const initials = (n: string) => n.split(" ").map(w => w[0]).join("").slice(0, 2)
 export default function ChatView({ data }: { data: Percakapan[] }) {
   const [list, setList] = useState(data);
   const [active, setActive] = useState(data[0].id);
+  const [showChat, setShowChat] = useState(false);
   const [q, setQ] = useState("");
+  const [ff, setFf] = useState("");
   const [text, setText] = useState("");
   const end = useRef<HTMLDivElement>(null);
   const cur = list.find(c => c.id === active)!;
   useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [active, cur.pesan.length]);
-  const open = (id: string) => { setActive(id); setList(l => l.map(c => (c.id === id ? { ...c, belumDibaca: 0 } : c))); };
+  const open = (id: string) => { setShowChat(true); setActive(id); setList(l => l.map(c => (c.id === id ? { ...c, belumDibaca: 0 } : c))); };
   const send = (t: string) => {
     if (!t.trim()) return;
     setList(l => l.map(c => (c.id === active ? { ...c, terakhir: t, pesan: [...c.pesan, { dari: "penjual", teks: t, waktu: "Baru saja" }] } : c)));
     setText("");
   };
-  const shown = list.filter(c => [c.nama, c.produk].some(v => v.toLowerCase().includes(q.toLowerCase())));
+  const shown = list.filter(c => (!ff || c.belumDibaca > 0) && [c.nama, c.produk].some(v => v.toLowerCase().includes(q.toLowerCase())));
   return (
     <>
       <Topbar title="Chat" subtitle="Percakapan dengan pembeli" />
-      <div className="grid h-[calc(100vh-9rem)] min-h-[480px] gap-4 lg:grid-cols-[340px_1fr]">
-        <Card className="flex flex-col overflow-hidden !p-0">
-          <div className="border-b border-primary-50 p-3"><SearchInput className="w-full" value={q} onChange={setQ} placeholder="Cari pembeli atau produk..." /></div>
+      <div className="grid h-[calc(100vh-12rem)] min-h-[460px] gap-4 lg:h-[calc(100vh-9rem)] lg:grid-cols-[340px_1fr]">
+        <Card className={clsx("flex-col overflow-hidden !p-0", showChat ? "hidden lg:flex" : "flex")}>
+          <div className="space-y-2 border-b border-primary-50 p-3"><SearchInput className="w-full" value={q} onChange={setQ} placeholder="Cari pembeli atau produk..." /><FilterSelect label="Status" value={ff} onChange={setFf} options={["Belum dibaca"]} allLabel="Semua pesan" /></div>
           <ul className="flex-1 overflow-y-auto">
             {shown.length === 0 && <li className="p-6 text-center text-sm text-primary-400">Tidak ada percakapan yang cocok.</li>}
             {shown.map(c => (
@@ -44,11 +47,12 @@ export default function ChatView({ data }: { data: Percakapan[] }) {
               </button></li>))}
           </ul>
         </Card>
-        <Card className="flex flex-col overflow-hidden !p-0">
+        <Card className={clsx("flex-col overflow-hidden !p-0", showChat ? "flex" : "hidden lg:flex")}>
           <div className="flex items-center gap-3 border-b border-primary-50 p-4">
+            <button onClick={() => setShowChat(false)} aria-label="Kembali ke daftar chat" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-primary-100 text-primary-600 lg:hidden"><ArrowLeft size={18} /></button>
             <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-100 text-sm font-bold text-primary-600">{initials(cur.nama)}</span>
             <div className="flex-1"><p className="font-bold">{cur.nama}</p></div>
-            <div className="flex items-center gap-2 rounded-lg bg-primary-50 px-3 py-1.5"><div className="h-8 w-8 rounded-lg bg-primary-200" /><div><p className="text-sm font-semibold">{cur.produk}</p><p className="text-xs text-primary-500">{cur.harga}</p></div></div>
+            <div className="hidden items-center gap-2 rounded-lg bg-primary-50 px-3 py-1.5 sm:flex"><div className="h-8 w-8 rounded-lg bg-primary-200" /><div><p className="text-sm font-semibold">{cur.produk}</p><p className="text-xs text-primary-500">{cur.harga}</p></div></div>
           </div>
           <div className="flex-1 space-y-3 overflow-y-auto bg-surface p-4">
             {cur.pesan.map((m, i) => (

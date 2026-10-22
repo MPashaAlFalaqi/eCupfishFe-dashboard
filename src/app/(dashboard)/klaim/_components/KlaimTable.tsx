@@ -2,13 +2,20 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge, Button, Card } from "@/components/ui";
+import FilterBar, { usePeriode } from "@/components/FilterBar";
+import { dalamPeriode, ekstrakTanggal } from "@/lib/periode";
 import DataTable, { type Column } from "@/components/DataTable";
 import type { Klaim } from "@/lib/types";
 
 const tone = { Pending: "gold", Disetujui: "green", Ditolak: "gray" } as const;
 export default function KlaimTable({ data }: { data: Klaim[] }) {
+  const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
-  const rows = data.filter(r => !status || r.status === status);
+  const [alasan, setAlasan] = useState("");
+  const periode = usePeriode();
+  const k = q.toLowerCase();
+  const alasanList = Array.from(new Set(data.map(r => r.alasan)));
+  const rows = data.filter(r => (!status || r.status === status) && (!alasan || r.alasan === alasan) && dalamPeriode(ekstrakTanggal(r.tanggal), periode.value, periode.dari, periode.sampai) && [r.id, r.pembeli, r.ikan].some(v => v.toLowerCase().includes(k)));
   const columns: Column<Klaim>[] = [
     { header: "ID Klaim", cell: r => <b>#{r.id}</b> },
     { header: "Pembeli", cell: r => r.pembeli },
@@ -19,14 +26,10 @@ export default function KlaimTable({ data }: { data: Klaim[] }) {
     { header: "Aksi", cell: r => <Link href={`/klaim/${r.id}`}><Button variant={r.status === "Pending" ? "primary" : "outline"} className="!px-3 !py-1.5">{r.status === "Pending" ? "Tinjau" : "Detail"}</Button></Link> },
   ];
   return (
-    <Card>
-      <div className="mb-4 flex items-center justify-between">
-        <select value={status} onChange={e => setStatus(e.target.value)} className="input !w-auto">
-          <option value="">Semua Status</option><option>Pending</option><option>Disetujui</option><option>Ditolak</option>
-        </select>
-        <p className="text-sm text-primary-400">{rows.length} klaim ditemukan</p>
-      </div>
-      <DataTable columns={columns} rows={rows} />
-    </Card>
+    <>
+      <FilterBar total={rows.length} periode={periode} search={{ value: q, onChange: setQ, placeholder: "Cari ID klaim, pembeli, ikan..." }}
+        filters={[{ label: "Status", value: status, onChange: setStatus, options: ["Pending", "Disetujui", "Ditolak"] }, { label: "Alasan", value: alasan, onChange: setAlasan, options: alasanList }]} />
+      <Card className="!p-2"><DataTable columns={columns} rows={rows} empty="Klaim tidak ditemukan" /></Card>
+    </>
   );
 }

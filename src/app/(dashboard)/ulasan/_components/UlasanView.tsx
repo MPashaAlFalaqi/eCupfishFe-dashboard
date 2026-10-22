@@ -5,26 +5,30 @@ import { useToast } from "@/components/Toast";
 import { Flag, MessageSquare, Star, ThumbsUp } from "lucide-react";
 import Topbar from "@/components/Topbar";
 import StatCard from "@/components/StatCard";
-import Tabs from "@/components/Tabs";
+import FilterBar, { usePeriode } from "@/components/FilterBar";
+import { dalamPeriode, ekstrakTanggal } from "@/lib/periode";
 import Stars from "@/components/Stars";
 import Modal from "@/components/Modal";
 import { Button, Card, Pill } from "@/components/ui";
 import type { Ulasan } from "@/lib/types";
 
-const tabs = ["Semua", "Belum dibalas", "5 ★", "4 ★", "3 ★", "2 ★", "1 ★"] as const;
 const initials = (n: string) => n.split(" ").map(w => w[0]).join("").slice(0, 2);
 
 export default function UlasanView({ data }: { data: Ulasan[] }) {
   const [items, setItems] = useState(data);
   const toast = useToast();
-  const [tab, setTab] = useState<(typeof tabs)[number]>("Semua");
+  const [q, setQ] = useState("");
+  const [rating, setRating] = useState("");
+  const [balasF, setBalasF] = useState("");
+  const periode = usePeriode();
   const [balas, setBalas] = useState<string | null>(null);
   const [teks, setTeks] = useState("");
   const [lapor, setLapor] = useState<Ulasan | null>(null);
   const avg = items.reduce((n, i) => n + i.bintang, 0) / items.length;
   const belum = items.filter(i => !i.balasan).length;
   const lima = Math.round((items.filter(i => i.bintang === 5).length / items.length) * 100);
-  const rows = items.filter(i => tab === "Semua" ? true : tab === "Belum dibalas" ? !i.balasan : i.bintang === Number(tab[0]));
+  const k = q.toLowerCase();
+  const rows = items.filter(i => (!rating || i.bintang === Number(rating)) && (!balasF || (balasF === "Belum dibalas" ? !i.balasan : !!i.balasan)) && dalamPeriode(ekstrakTanggal(i.tanggal), periode.value, periode.dari, periode.sampai) && [i.nama, i.produk, i.komentar].some(v => v.toLowerCase().includes(k)));
   const kirim = (id: string) => { if (!teks.trim()) return; setItems(s => s.map(i => (i.id === id ? { ...i, balasan: teks.trim() } : i))); setBalas(null); setTeks(""); toast("Balasan terkirim"); };
   return (
     <>
@@ -35,11 +39,12 @@ export default function UlasanView({ data }: { data: Ulasan[] }) {
         <StatCard label="Belum Dibalas" value={String(belum)} note={belum ? "Balas dalam 2 hari ya" : "Semua sudah dibalas"} noteTone={belum ? "red" : "blue"} icon={MessageSquare} />
         <StatCard label="Ulasan Bintang 5" value={`${lima}%`} icon={ThumbsUp} />
       </div>
-      <Tabs tabs={tabs} value={tab} onChange={setTab} />
+      <FilterBar total={rows.length} periode={periode} search={{ value: q, onChange: setQ, placeholder: "Cari pembeli, produk, komentar..." }}
+        filters={[{ label: "Rating", value: rating, onChange: setRating, options: [5, 4, 3, 2, 1].map(n => ({ value: String(n), label: `${n} ★` })) }, { label: "Balasan", value: balasF, onChange: setBalasF, options: ["Belum dibalas", "Sudah dibalas"] }]} />
       {rows.length === 0 && <Card><p className="py-10 text-center text-primary-400">Belum ada ulasan di kategori ini. Layani pembeli dengan baik, bintang akan datang!</p></Card>}
       <div className="space-y-3"><AnimatePresence initial={false}>{rows.map(u => (
         <motion.div key={u.id} layout initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.22 }}><Card>
-          <div className="flex items-start gap-3">
+          <div className="flex flex-wrap items-start gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary-100 text-sm font-bold text-primary-600">{initials(u.nama)}</span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2"><b>{u.nama}</b><Stars n={u.bintang} /><span className="text-xs text-primary-400">{u.tanggal}</span>{u.dilaporkan && <Pill tone="red">Dilaporkan</Pill>}</div>
@@ -52,7 +57,7 @@ export default function UlasanView({ data }: { data: Ulasan[] }) {
                 <div className="mt-3"><textarea className="input" rows={2} value={teks} onChange={e => setTeks(e.target.value)} placeholder="Tulis balasan yang ramah untuk pembeli..." />
                   <div className="mt-2 flex gap-2"><Button className="!py-1.5" onClick={() => kirim(u.id)}>Kirim Balasan</Button><Button variant="outline" className="!py-1.5" onClick={() => { setBalas(null); setTeks(""); }}>Batal</Button></div></div>)}
             </div>
-            <div className="flex shrink-0 gap-2">
+            <div className="flex shrink-0 gap-2 max-sm:w-full max-sm:justify-end">
               {!u.balasan && balas !== u.id && <Button variant="outline" className="!px-3 !py-1.5" onClick={() => { setBalas(u.id); setTeks(""); }}>Balas</Button>}
               {!u.dilaporkan && <button aria-label="Laporkan ulasan" onClick={() => setLapor(u)} className="grid h-9 w-9 place-items-center rounded-lg border border-primary-100 text-primary-400 hover:bg-primary-50"><Flag size={15} /></button>}
             </div>

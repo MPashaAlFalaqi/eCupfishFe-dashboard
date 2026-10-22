@@ -11,7 +11,7 @@ export function Button({ variant = "primary", className, ...p }: ButtonHTMLAttri
     variant === "ghost" && "text-primary-700 hover:bg-primary-50", className)} />;
 }
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={clsx("rounded-card bg-white p-4 shadow-card transition-shadow duration-200 hover:shadow-[0_2px_4px_rgba(8,36,64,.05),0_10px_28px_rgba(8,36,64,.09)]", className)}>{children}</div>;
+  return <div className={clsx("min-w-0 rounded-card bg-white p-4 shadow-card transition-shadow duration-200 hover:shadow-[0_2px_4px_rgba(8,36,64,.05),0_10px_28px_rgba(8,36,64,.09)]", className)}>{children}</div>;
 }
 const tones = { blue: "bg-primary-100 text-primary-600", gold: "bg-secondary-100 text-secondary-700", red: "bg-red-50 text-red-600", green: "bg-emerald-50 text-emerald-600", gray: "bg-slate-100 text-slate-600" };
 export function Badge({ tone = "blue", children }: { tone?: keyof typeof tones; children: ReactNode }) {

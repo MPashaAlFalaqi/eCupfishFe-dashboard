@@ -4,26 +4,31 @@ import { useState } from "react";
 import { CheckCheck, Gavel, MessageCircle, Package, ShieldAlert, ShoppingBag, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import Topbar from "@/components/Topbar";
-import Tabs from "@/components/Tabs";
+import FilterBar from "@/components/FilterBar";
 import { useToast } from "@/components/Toast";
 import { Button, Card } from "@/components/ui";
 import type { Notif } from "@/lib/types";
 
-const tabs = ["Semua", "Pesanan", "Lelang", "Klaim", "Stok", "Pesan"] as const;
+const jenisList = ["Pesanan", "Lelang", "Klaim", "Stok", "Pesan"];
 const icon: Record<Notif["jenis"], LucideIcon> = { Pesanan: ShoppingBag, Lelang: Gavel, Klaim: ShieldAlert, Stok: Package, Pesan: MessageCircle };
 
 export default function NotifView({ data }: { data: Notif[] }) {
   const [items, setItems] = useState(data);
   const toast = useToast();
-  const [tab, setTab] = useState<(typeof tabs)[number]>("Semua");
+  const [q, setQ] = useState("");
+  const [jenis, setJenis] = useState("");
+  const [status, setStatus] = useState("");
+  const [waktu, setWaktu] = useState("");
   const unread = items.filter(i => !i.dibaca).length;
-  const rows = items.filter(i => tab === "Semua" || i.jenis === tab);
+  const k = q.toLowerCase();
+  const rows = items.filter(i => (!jenis || i.jenis === jenis) && (!waktu || i.grup === waktu) && (!status || (status === "Belum dibaca" ? !i.dibaca : i.dibaca)) && [i.judul, i.isi].some(v => v.toLowerCase().includes(k)));
   const read = (id: string) => setItems(s => s.map(i => (i.id === id ? { ...i, dibaca: true } : i)));
   return (
     <>
       <Topbar title="Notifikasi" subtitle={unread ? `${unread} belum dibaca` : "Semua sudah dibaca"}
         action={<Button variant="outline" disabled={!unread} onClick={() => { setItems(s => s.map(i => ({ ...i, dibaca: true }))); toast("Semua notifikasi ditandai dibaca"); }}><CheckCheck size={16} />Tandai semua dibaca</Button>} />
-      <Tabs tabs={tabs} value={tab} onChange={setTab} />
+      <FilterBar total={rows.length} search={{ value: q, onChange: setQ, placeholder: "Cari notifikasi..." }}
+        filters={[{ label: "Jenis", value: jenis, onChange: setJenis, options: jenisList }, { label: "Status", value: status, onChange: setStatus, options: ["Belum dibaca", "Sudah dibaca"] }, { label: "Waktu", value: waktu, onChange: setWaktu, options: ["Hari ini", "Kemarin"] }]} />
       {rows.length === 0 ? <Card><p className="py-10 text-center text-primary-400">Belum ada notifikasi di sini. Tenang, kabar baik akan segera datang!</p></Card> : (
         (["Hari ini", "Kemarin"] as const).map(g => {
           const list = rows.filter(r => r.grup === g);

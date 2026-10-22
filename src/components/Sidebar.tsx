@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { useShell } from "@/components/ShellProvider";
 import { LayoutDashboard, Boxes, Gavel, Truck, ShieldAlert, Wallet, Settings, LogOut, ClipboardList, MessageCircle, Landmark, Star } from "lucide-react";
 
 const menu = [
@@ -19,32 +20,42 @@ const menu = [
   { href: "/pembayaran", label: "Pembayaran Masuk", icon: Landmark },
 ];
 const spring = { type: "spring" as const, stiffness: 420, damping: 34 };
-function Item({ href, label, icon: Icon, active }: any) {
+function Item({ href, label, icon: Icon, active, ns, onNavigate, collapsed }: any) {
   return (
-    <Link href={href} className={clsx("group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-      active ? "font-semibold text-secondary-400" : "text-primary-200 hover:bg-primary-900")}>
-      {active && <motion.span layoutId="nav-bg" transition={spring} className="absolute inset-0 rounded-lg bg-primary-800" />}
-      {active && <motion.span layoutId="nav-bar" transition={spring} className="absolute -left-4 top-1/2 -mt-3 h-6 w-1 rounded-r bg-secondary-500" />}
-      <Icon size={16} className="relative transition-transform duration-200 group-hover:scale-125" /><span className="relative">{label}</span>
+    <Link href={href} onClick={onNavigate} title={collapsed ? label : undefined}
+      className={clsx("group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors", collapsed && "justify-center px-0",
+        active ? "font-semibold text-secondary-400" : "text-primary-200 hover:bg-primary-900")}>
+      {active && <motion.span layoutId={`nav-bg-${ns}`} transition={spring} className="absolute inset-0 rounded-lg bg-primary-800" />}
+      {active && <motion.span layoutId={`nav-bar-${ns}`} transition={spring} className="absolute -left-4 top-1/2 -mt-3 h-6 w-1 rounded-r bg-secondary-500" />}
+      <Icon size={collapsed ? 18 : 16} className="relative transition-transform duration-200 group-hover:scale-125" />{!collapsed && <span className="relative">{label}</span>}
     </Link>
   );
 }
-export default function Sidebar() {
+export function SidebarBody({ ns, onNavigate, collapsed = false }: { ns: string; onNavigate?: () => void; collapsed?: boolean }) {
   const path = usePathname();
+  const label = "mb-2 px-3 text-xs font-medium uppercase tracking-wider text-primary-400";
   return (
-    <aside className="sticky top-0 print:hidden hidden h-screen w-56 shrink-0 flex-col overflow-y-auto bg-primary-950 p-4 lg:flex">
-      <div className="mb-6"><Logo /></div>
-      <p className="mb-2 px-3 text-xs font-medium text-primary-400 uppercase tracking-wider">Menu utama</p>
-      <nav className="space-y-1">{menu.map(m => <Item key={m.href} {...m} active={path.startsWith(m.href)} />)}</nav>
-      <p className="mb-2 mt-6 px-3 text-xs font-medium text-primary-400 uppercase tracking-wider">Lainnya</p>
-      <Item href="/pengaturan" label="Pengaturan" icon={Settings} active={path.startsWith("/pengaturan")} />
+    <>
+      <div className={clsx("mb-6", collapsed && "flex justify-center")}><Logo compact={collapsed} /></div>
+      {collapsed ? <div className="mb-2 border-t border-primary-800" /> : <p className={label}>Menu utama</p>}
+      <nav className="space-y-1">{menu.map(m => <Item key={m.href} {...m} ns={ns} onNavigate={onNavigate} collapsed={collapsed} active={path.startsWith(m.href)} />)}</nav>
+      {collapsed ? <div className="my-3 border-t border-primary-800" /> : <p className={`${label} mt-6`}>Lainnya</p>}
+      <Item href="/pengaturan" label="Pengaturan" icon={Settings} ns={ns} onNavigate={onNavigate} collapsed={collapsed} active={path.startsWith("/pengaturan")} />
       <div className="mt-auto border-t border-primary-800 pt-4">
-        <Link href="/login" className="mb-3 flex items-center gap-2 px-3 text-sm text-primary-300"><LogOut size={16} />Keluar</Link>
-        <div className="flex items-center gap-2 px-1">
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-primary-500 text-sm font-bold text-white">PA</div>
-          <div><p className="text-sm font-semibold text-white">PASHA</p><p className="text-xs text-primary-300">Betta Farm</p></div>
+        <Link href="/login" title={collapsed ? "Keluar" : undefined} className={clsx("mb-3 flex items-center gap-2 px-3 text-sm text-primary-300 hover:text-white", collapsed && "justify-center px-0")}><LogOut size={collapsed ? 18 : 16} />{!collapsed && "Keluar"}</Link>
+        <div className={clsx("flex items-center gap-2 px-1", collapsed && "justify-center px-0")}>
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-500 text-sm font-bold text-white">PA</div>
+          {!collapsed && <div><p className="text-sm font-semibold text-white">PASHA</p><p className="text-xs text-primary-300">Betta Farm</p></div>}
         </div>
       </div>
+    </>
+  );
+}
+export default function Sidebar() {
+  const { collapsed } = useShell();
+  return (
+    <aside className={clsx("sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto overflow-x-hidden bg-primary-950 p-4 transition-[width] duration-200 lg:flex print:hidden", collapsed ? "w-[4.5rem]" : "w-56")}>
+      <SidebarBody ns="d" collapsed={collapsed} />
     </aside>
   );
 }

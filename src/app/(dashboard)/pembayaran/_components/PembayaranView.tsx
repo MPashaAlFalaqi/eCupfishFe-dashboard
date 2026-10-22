@@ -6,6 +6,8 @@ import { Reorder } from "framer-motion";
 import { useToast } from "@/components/Toast";
 import Topbar from "@/components/Topbar";
 import StatCard from "@/components/StatCard";
+import FilterBar, { usePeriode } from "@/components/FilterBar";
+import { dalamPeriode, ekstrakTanggal } from "@/lib/periode";
 import Modal from "@/components/Modal";
 import DataTable, { type Column } from "@/components/DataTable";
 import { Button, Card, Pill } from "@/components/ui";
@@ -20,6 +22,13 @@ export default function PembayaranView({ data, rekening }: { data: Pembayaran[];
   const [reks, setReks] = useState(rekening);
   const toast = useToast();
   const [sel, setSel] = useState<Pembayaran | null>(null);
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("");
+  const [metode, setMetode] = useState("");
+  const periode = usePeriode();
+  const metodeList = Array.from(new Set(data.map(d => d.metode)));
+  const k = q.toLowerCase();
+  const rows = data.filter(d => (!status || d.status === status) && (!metode || d.metode === metode) && dalamPeriode(ekstrakTanggal(d.tanggal), periode.value, periode.dari, periode.sampai) && [d.pesanan, d.pembeli].some(v => v.toLowerCase().includes(k)));
   const proses = data.filter(d => d.status === "Dalam Proses").reduce((n, d) => n + bersih(d), 0);
   const columns: Column<Pembayaran>[] = [
     { header: "Tanggal", cell: r => r.tanggal },
@@ -52,7 +61,11 @@ export default function PembayaranView({ data, rekening }: { data: Pembayaran[];
         </ol>
       </Card>
       <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-        <Card><h3 className="mb-2 font-semibold">Riwayat Pembayaran</h3><DataTable columns={columns} rows={data} /></Card>
+        <div className="min-w-0">
+          <FilterBar total={rows.length} periode={periode} search={{ value: q, onChange: setQ, placeholder: "Cari pesanan atau pembeli..." }}
+            filters={[{ label: "Status", value: status, onChange: setStatus, options: ["Dalam Proses", "Diteruskan", "Dikembalikan"] }, { label: "Metode", value: metode, onChange: setMetode, options: metodeList }]} />
+          <Card><h3 className="mb-2 font-semibold">Riwayat Pembayaran</h3><DataTable columns={columns} rows={rows} empty="Pembayaran tidak ditemukan" /></Card>
+        </div>
         <Card className="self-start">
           <h3 className="mb-1 font-semibold">Rekening Penerima</h3>
           <p className="mb-3 text-sm text-primary-500">Seret untuk mengubah urutan. Rekening paling atas jadi rekening utama.</p>
