@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import clsx from "clsx";
 import { AlertTriangle, Gavel, Package, Truck, Wallet } from "lucide-react";
@@ -8,6 +10,8 @@ import { Button, Card, Pill } from "@/components/ui";
 import { pesananTindakan, stokMenipis } from "@/lib/mock-data";
 import PenjualanChart from "./_components/PenjualanChart";
 import LelangBerlangsung from "./_components/LelangBerlangsung";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 type Row = (typeof pesananTindakan)[number];
@@ -24,18 +28,42 @@ const columns: Column<Row>[] = [
 const bar = { red: ["bg-red-500", "text-red-500"], gold: ["bg-secondary-500", "text-secondary-600"], blue: ["bg-primary-400", "text-primary-500"] } as const;
 
 export default function DashboardPage() {
+  const [namaAdmin, setNamaAdmin] = useState("Memuat...");
+  const router = useRouter();
+
+  // Route Guard: Mengecek sesi login dan mengambil nama
+  useEffect(() => {
+    const token = localStorage.getItem("admin_token");
+    const adminData = localStorage.getItem("admin_data");
+
+    if (!token) {
+      // Jika tidak ada token, tendang kembali ke halaman login
+      router.push("/login");
+    } else if (adminData) {
+      // Jika login valid, ambil nama dari localStorage
+      const parsedData = JSON.parse(adminData);
+      setNamaAdmin(parsedData.name);
+    }
+  }, [router]);
+
   const tanggal = new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
   const split = "xl:grid-cols-[1.65fr_1fr]";
+  
   return (
     <>
-      <Topbar title="Selamat pagi, Pasha 👋" subtitle={`${tanggal} · 5 tugas menunggu tindakan`} />
+      {/* Menggunakan variabel {namaAdmin} untuk ucapan selamat pagi */}
+      <Topbar title={`Selamat pagi, ${namaAdmin} 👋`} subtitle={`${tanggal} · 5 tugas menunggu tindakan`} />
+      
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard variant="navy" label="Pendapatan Bulan Ini" value="Rp 48,2 jt" note="+12,4% dari bulan lalu" icon={Wallet} />
         <StatCard label="Stok Tersedia" value="342 ekor" note="4 varian hampir habis" noteTone="red" icon={Package} />
         <StatCard label="Lelang Aktif" value="3 sesi" note="12 penawar hari ini" noteTone="blue" icon={Gavel} iconTone="gold" />
         <StatCard label="Perlu Dikirim" value="7 pesanan" note="2 melewati batas kirim" noteTone="red" icon={Truck} />
       </div>
-      <div className={`mt-4 grid gap-4 ${split}`}><PenjualanChart /><LelangBerlangsung /></div>
+      <div className={`mt-4 grid gap-4 ${split}`}>
+        <PenjualanChart />
+        <LelangBerlangsung />
+      </div>
       <div className={`mt-4 grid gap-4 ${split}`}>
         <Card>
           <div className="mb-2 flex items-center justify-between"><h3 className="font-semibold">Pesanan Perlu Tindakan</h3><Link href="/pesanan" className="text-sm font-medium text-primary-500">Lihat semua</Link></div>
