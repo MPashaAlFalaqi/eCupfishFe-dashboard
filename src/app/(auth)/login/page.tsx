@@ -31,11 +31,22 @@ export default function LoginPage() {
 
       if (!res.ok) throw new Error(data.message || "Gagal login. Periksa email dan kata sandi Anda.");
 
-      if (data.user.role === "ADMIN") {
+      // PERUBAHAN DI SINI: Izinkan ADMIN dan SUPERADMIN masuk
+      if (data.user.role === "ADMIN" || data.user.role === "SUPERADMIN") {
+        
+        // Simpan token dan data untuk keduanya
         localStorage.setItem("admin_token", data.token);
         localStorage.setItem("admin_data", JSON.stringify(data.user));
-        router.push("/dashboard");
+
+        // Pemilahan arah halaman (Routing)
+        if (data.user.role === "SUPERADMIN") {
+          router.push("/superadmin/dashboard"); // Arahkan Super Admin
+        } else {
+          router.push("/dashboard"); // Arahkan Admin Pembudidaya
+        }
+
       } else {
+        // Tolak jika yang login adalah BUYER (Pembeli biasa)
         setError("Akses ditolak! Halaman ini khusus untuk Admin / Pembudidaya.");
       }
     } catch (err: any) {
