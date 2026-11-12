@@ -11,8 +11,10 @@ import DataTable, { type Column } from "@/components/DataTable";
 import { Button, Card } from "@/components/ui";
 import type { Grade, Ikan } from "@/lib/types";
 import KetersediaanModal from "./KetersediaanModal";
+import { ApiProduct, toIkan } from "@/lib/products";
+import { api, jsonBody } from "@/lib/api";
 
-const gradeStyle: Record<Grade, string> = { A: "bg-secondary-100 text-secondary-700", B: "bg-primary-100 text-primary-600", C: "bg-slate-100 text-slate-600" };
+const gradeStyle: Record<Grade, string> = { S: "bg-green-100 text-green-600", A: "bg-secondary-100 text-secondary-700", B: "bg-primary-100 text-primary-600", C: "bg-slate-100 text-slate-600" };
 
 export default function StokTable({ data }: { data: Ikan[] }) {
   const [items, setItems] = useState(data);
@@ -49,12 +51,39 @@ export default function StokTable({ data }: { data: Ikan[] }) {
       </div>) },
   ];
 
+  const hapus = async (id: string) => {
+  try {
+    await api(`/api/seller/products/${id}`, { method: 'DELETE' });
+    setItems((prev) => prev.filter((x) => x.id !== id));
+    // tampilkan toast sukses yang sudah ada
+  } catch (e) {
+    // tampilkan toast gagal: e instanceof ApiError ? e.message : 'Gagal menghapus.'
+  }
+};
+
+  const simpanKetersediaan = async (
+    id: string,
+    v: { tersedia: boolean; otomatis: boolean; stok: number; ambang: number; alasan?: string },
+  ) => {
+    const r = await api<{ data: ApiProduct }>(`/api/seller/products/${id}/availability`, {
+      method: 'PATCH',
+      body: jsonBody({
+        status: v.tersedia ? 'AVAILABLE' : 'SOLD_OUT',
+        autoStatus: v.otomatis,
+        stock: v.stok,
+        lowStockThreshold: v.ambang,
+        reason: v.alasan,
+      }),
+    });
+    setItems((prev) => prev.map((x) => (x.id === id ? toIkan(r.data) : x)));
+  };
+
   return (
     <>
       <Topbar title="Manajemen Stok Cupang" subtitle={`${items.length} varian cupang · ${total.toLocaleString("id-ID")} ekor total stok aktif`}
         action={<Link href="/stok/baru"><Button><Plus size={16} />Tambah Ikan Baru</Button></Link>} />
       <FilterBar total={rows.length} search={{ value: q, onChange: setQ, placeholder: "Cari nama atau jenis ikan..." }}
-        filters={[{ label: "Jenis", value: jenis, onChange: setJenis, options: jenisList }, { label: "Grade", value: grade, onChange: setGrade, options: [{ value: "A", label: "Grade A" }, { value: "B", label: "Grade B" }, { value: "C", label: "Grade C" }] },
+        filters={[{ label: "Jenis", value: jenis, onChange: setJenis, options: jenisList }, { label: "Grade", value: grade, onChange: setGrade, options: [{ value: "S", label: "Grade S" },{ value: "A", label: "Grade A" }, { value: "B", label: "Grade B" }, { value: "C", label: "Grade C" }] },
           { label: "Status", value: status, onChange: setStatus, options: ["Tersedia", "Habis"] }]} />
       <Card className="!p-2">
         <DataTable columns={columns} rows={rows} empty="Ikan tidak ditemukan" />
