@@ -5,10 +5,10 @@ import { Film, ImagePlus, Star, X } from "lucide-react";
 import clsx from "clsx";
 import { Card } from "@/components/ui";
 
-export interface MediaItem { id: string; name: string; url: string; type: "image" | "video"; size: number }
+export interface MediaItem { id: string; name: string; url: string; type: "image" | "video"; size: number; file: File }
 const MAX_FILES = 6, MAX_MB = 20;
 
-export default function MediaUploader({ onChange }: { onChange: (items: MediaItem[]) => void }) {
+export default function MediaUploader({ onChange, existingCount = 0 }: { onChange: (items: MediaItem[]) => void; existingCount?: number }) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [drag, setDrag] = useState(false);
@@ -22,8 +22,8 @@ export default function MediaUploader({ onChange }: { onChange: (items: MediaIte
       const image = f.type.startsWith("image/"), video = f.type.startsWith("video/");
       if (!image && !video) { msgs.push(`${f.name}: format belum didukung. Gunakan JPG, PNG, atau MP4.`); continue; }
       if (f.size > MAX_MB * 1024 * 1024) { msgs.push(`${f.name}: ukuran melebihi ${MAX_MB}MB. Kompres dulu, lalu coba lagi.`); continue; }
-      if (items.length + ok.length >= MAX_FILES) { msgs.push(`Maksimal ${MAX_FILES} file per ikan.`); break; }
-      ok.push({ id: `${Date.now()}-${Math.random()}`, name: f.name, url: URL.createObjectURL(f), type: image ? "image" : "video", size: f.size });
+      if (existingCount + items.length + ok.length >= MAX_FILES) { msgs.push(`Maksimal ${MAX_FILES} file per ikan.`); break; }
+      ok.push({ id: `${Date.now()}-${Math.random()}`, name: f.name, url: URL.createObjectURL(f), type: image ? "image" : "video", size: f.size, file: f });
     }
     setErrors(msgs);
     if (ok.length) set([...items, ...ok]);
@@ -33,7 +33,7 @@ export default function MediaUploader({ onChange }: { onChange: (items: MediaIte
 
   return (
     <Card>
-      <div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">Foto / Video Ikan</h3><span className="text-xs text-primary-400">{items.length}/{MAX_FILES} file</span></div>
+      <div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">Foto / Video Ikan</h3><span className="text-xs text-primary-400">{existingCount + items.length}/{MAX_FILES} file</span></div>
       <label onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); setDrag(false); add(e.dataTransfer.files); }}
         className={clsx("grid cursor-pointer place-items-center rounded-lg border-2 border-dashed p-5 text-center transition-colors",
           drag ? "border-primary-400 bg-primary-100" : "border-primary-200 bg-primary-50 text-primary-500 hover:bg-primary-100/60", items.length ? "h-24" : "h-44")}>

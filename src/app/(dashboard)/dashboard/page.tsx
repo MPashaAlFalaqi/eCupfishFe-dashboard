@@ -13,7 +13,6 @@ import LelangBerlangsung from "./_components/LelangBerlangsung";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export const dynamic = "force-dynamic";
 type Row = (typeof pesananTindakan)[number];
 const statusTone = { Bayar: "gold", Kemas: "blue", Kirim: "blue", Klaim: "gray" } as const;
 const columns: Column<Row>[] = [

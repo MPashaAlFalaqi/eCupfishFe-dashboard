@@ -1,6 +1,6 @@
-"use client";
+"use client"; 
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Sidebar, NavTab } from "../../../components/componentssu/Sidebar";
 import { Header } from "../../../components/componentssu/Header";
 import { DashboardOverview } from "../../../components/componentssu/DashboardOverview";
@@ -19,8 +19,19 @@ import {
 } from "../../../data/mockData";
 
 export default function SuperAdminApp() {
+  // 1. STATE UNTUK NAMA ADMIN
+  const [adminName, setAdminName] = useState("Admin");
+
+  // 2. MENGAMBIL DATA DARI LOCAL STORAGE SAAT HALAMAN DIMUAT
+  useEffect(() => {
+    const storedData = localStorage.getItem("admin_data");
+    if (storedData) {
+      const user = JSON.parse(storedData);
+      setAdminName(user.name); // Menyimpan nama (misal: "Super Admin") ke state
+    }
+  }, []);
+
   const [currentTab, setCurrentTab] = useState<NavTab>("dashboard");
-  // Sidebar expanded by default so it's ALWAYS visible when opening the web!
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
@@ -71,7 +82,7 @@ export default function SuperAdminApp() {
       tipe: "aktifkan_mitra",
       judul: "Kemitraan Disetujui",
       detail: `Akun budidaya ${target.namaFarm} telah diverifikasi dan diaktifkan.`,
-      adminName: "Pasha (Super Admin)",
+      adminName: adminName, // Menggunakan nama admin yang dinamis
       targetName: target.namaFarm,
       targetRole: "Pembudidaya",
       badgeVariant: "green",
@@ -95,7 +106,7 @@ export default function SuperAdminApp() {
       tipe: "suspend_mitra",
       judul: "Pengajuan Kemitraan Ditolak",
       detail: `Pengajuan ${target.namaFarm} ditolak: ${reason}`,
-      adminName: "Pasha (Super Admin)",
+      adminName: adminName, // Menggunakan nama admin yang dinamis
       targetName: target.namaFarm,
       targetRole: "Pembudidaya",
       badgeVariant: "red",
@@ -119,7 +130,7 @@ export default function SuperAdminApp() {
       tipe: "suspend_mitra",
       judul: "Mitra Ditangguhkan (Suspend)",
       detail: `Akun ${target.namaFarm} disuspend dengan alasan: ${reason}`,
-      adminName: "Pasha (Super Admin)",
+      adminName: adminName, // Menggunakan nama admin yang dinamis
       targetName: target.namaFarm,
       targetRole: "Pembudidaya",
       badgeVariant: "red",
@@ -143,7 +154,7 @@ export default function SuperAdminApp() {
       tipe: "aktifkan_mitra",
       judul: "Penangguhan Mitra Dibuka",
       detail: `Akun ${target.namaFarm} telah dipulihkan dan dapat bertransaksi kembali.`,
-      adminName: "Pasha (Super Admin)",
+      adminName: adminName, // Menggunakan nama admin yang dinamis
       targetName: target.namaFarm,
       targetRole: "Pembudidaya",
       badgeVariant: "green",
@@ -174,7 +185,7 @@ export default function SuperAdminApp() {
       tipe: "tambah_akun",
       judul: "Penambahan Mitra Manual",
       detail: `Super admin mendaftarkan mitra baru: ${newMitra.namaFarm} (${newMitra.kota}).`,
-      adminName: "Pasha (Super Admin)",
+      adminName: adminName, // Menggunakan nama admin yang dinamis
       targetName: newMitra.namaFarm,
       targetRole: "Pembudidaya",
       badgeVariant: "blue",
@@ -199,7 +210,7 @@ export default function SuperAdminApp() {
       tipe: "blokir_pembeli",
       judul: "Akun Pembeli Diblokir",
       detail: `Akun ${target.namaLengkap} (@${target.username}) diblokir: ${reason}`,
-      adminName: "Pasha (Super Admin)",
+      adminName: adminName, // Menggunakan nama admin yang dinamis
       targetName: target.namaLengkap,
       targetRole: "Pembeli",
       badgeVariant: "red",
@@ -223,7 +234,7 @@ export default function SuperAdminApp() {
       tipe: "buka_blokir_pembeli",
       judul: "Blokir Pembeli Dibuka",
       detail: `Akun pembeli ${target.namaLengkap} telah dipulihkan.`,
-      adminName: "Pasha (Super Admin)",
+      adminName: adminName, // Menggunakan nama admin yang dinamis
       targetName: target.namaLengkap,
       targetRole: "Pembeli",
       badgeVariant: "green",
@@ -255,7 +266,7 @@ export default function SuperAdminApp() {
       tipe: "tambah_akun",
       judul: "Penambahan Pembeli Manual",
       detail: `Super admin mendaftarkan akun pembeli baru: ${newBuyer.namaLengkap}.`,
-      adminName: "Pasha (Super Admin)",
+      adminName: adminName, // Menggunakan nama admin yang dinamis
       targetName: newBuyer.namaLengkap,
       targetRole: "Pembeli",
       badgeVariant: "blue",
@@ -273,7 +284,6 @@ export default function SuperAdminApp() {
 
   return (
     <div className="min-h-screen bg-[#F4F7FB] flex">
-      {/* Sidebar Navigation - Always present & visible by default */}
       <Sidebar
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
@@ -285,13 +295,12 @@ export default function SuperAdminApp() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Main Content Area: dynamically adjusts left padding based on sidebar state */}
       <div
         className={`flex-1 transition-all duration-300 ease-in-out flex flex-col min-w-0 min-h-screen ${
           isSidebarExpanded ? "md:pl-64" : "md:pl-20"
         }`}
       >
-        {/* Top Navbar Header - Always visible with toggle icon and breadcrumbs */}
+        {/* 4. OPER VARIABEL adminName KE KOMPONEN HEADER */}
         <Header
           currentTab={currentTab}
           isSidebarExpanded={isSidebarExpanded}
@@ -300,7 +309,6 @@ export default function SuperAdminApp() {
           onNavigateToTab={setCurrentTab}
         />
 
-        {/* View Router */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
           {currentTab === "dashboard" && (
             <DashboardOverview
@@ -344,7 +352,6 @@ export default function SuperAdminApp() {
         </main>
       </div>
 
-      {/* Floating Toast Notification Stack */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
     </div>
   );

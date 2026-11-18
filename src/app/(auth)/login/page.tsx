@@ -7,54 +7,36 @@ import MobileBrand from "@/components/MobileBrand";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
+import { api, ApiError, jsonBody, session, SessionUser } from '@/lib/api';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter(); // Ini diperlukan untuk router.replace
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "Gagal login. Periksa email dan kata sandi Anda.");
-
-      // PERUBAHAN DI SINI: Izinkan ADMIN dan SUPERADMIN masuk
-      if (data.user.role === "ADMIN" || data.user.role === "SUPERADMIN") {
-        
-        // Simpan token dan data untuk keduanya
-        localStorage.setItem("admin_token", data.token);
-        localStorage.setItem("admin_data", JSON.stringify(data.user));
-
-        // Pemilahan arah halaman (Routing)
-        if (data.user.role === "SUPERADMIN") {
-          router.push("/superadmin/dashboard"); // Arahkan Super Admin
-        } else {
-          router.push("/dashboard"); // Arahkan Admin Pembudidaya
-        }
-
-      } else {
-        // Tolak jika yang login adalah BUYER (Pembeli biasa)
-        setError("Akses ditolak! Halaman ini khusus untuk Admin / Pembudidaya.");
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+  e.preventDefault();
+  setError('');
+  setLoading(true);
+  try {
+    const data = await api<{ token: string; refreshToken: string; user: SessionUser }>(
+      '/api/auth/login',
+      { method: 'POST', body: jsonBody({ email: email.trim(), password }) },
+    );
+    if (data.user.role === 'BUYER') {
+      setError('Akun pembeli tidak dapat masuk ke dashboard. Gunakan aplikasi mobile.');
+      return;
     }
-  };
+    session.save(data);
+    router.replace(data.user.role === 'SUPERADMIN' ? '/superadmin/dashboard' : '/dashboard');
+  } catch (err) {
+    setError(err instanceof ApiError ? err.message : 'Terjadi kesalahan. Coba lagi.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
@@ -123,17 +105,13 @@ export default function LoginPage() {
             <Link href="/lupa-sandi" className="text-primary-500 hover:underline">Lupa kata sandi?</Link>
           </div>
           
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? "Memproses..." : "Masuk ke Dashboard"}
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? "Memproses..." : "Masuk ke Dashboard"}
           </Button>
           
           <div className="flex items-center gap-3 text-xs text-primary-300">
             <span className="h-px flex-1 bg-primary-100" />atau<span className="h-px flex-1 bg-primary-100" />
           </div>
-          
-          <p className="text-center text-sm text-primary-500">
-            Belum punya akun? <Link href="/register" className="font-semibold text-primary-600 hover:underline">Daftar sebagai pembudidaya</Link>
-          </p>
         </form>
       </section>
     </div>

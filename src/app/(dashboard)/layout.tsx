@@ -4,8 +4,10 @@ import MobileDrawer from "@/components/MobileDrawer";
 import NavProgress from "@/components/NavProgress";
 import { ShellProvider } from "@/components/ShellProvider";
 import { ToastProvider } from "@/components/Toast";
+import AuthGuard from '@/components/AuthGuard';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
+  <AuthGuard roles={['ADMIN']}>
     <ToastProvider>
       <ShellProvider>
         <div className="flex min-h-screen">
@@ -19,5 +21,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </ShellProvider>
     </ToastProvider>
+  </AuthGuard>
   );
 }

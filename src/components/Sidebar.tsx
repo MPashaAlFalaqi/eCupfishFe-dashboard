@@ -12,6 +12,7 @@ import {
   Wallet, Settings, LogOut, ClipboardList, 
   MessageCircle, Landmark, Star 
 } from "lucide-react";
+import { api, jsonBody, session } from "@/lib/api";
 
 const menu = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -59,18 +60,21 @@ export function SidebarBody({ ns, onNavigate, collapsed = false }: { ns: string;
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_data");
-    router.push("/login");
-  };
+ const keluar = async () => {
+  const rt = session.refreshToken;
+  if (rt) {
+    await api('/api/auth/logout', { method: 'POST', body: jsonBody({ refreshToken: rt }) }).catch(() => {});
+  }
+  session.clear();
+  router.replace('/login');
+};
 
-  const label = "mb-2 px-3 text-xs font-medium uppercase tracking-wider text-primary-400";
-  
+  const [nama, setNama] = useState('');
+  useEffect(() => setNama(session.user?.name ?? ''), []);
   return (
     <>
       <div className={clsx("mb-6", collapsed && "flex justify-center")}><Logo compact={collapsed} /></div>
-      {collapsed ? <div className="mb-2 border-t border-primary-800" /> : <p className={label}>Menu utama</p>}
+      {collapsed ? <div className="mb-2 border-t border-primary-800" /> : <p className={nama}>Menu utama</p>}
       
       <nav className="space-y-1">
         {menu.map(m => (
@@ -78,12 +82,12 @@ export function SidebarBody({ ns, onNavigate, collapsed = false }: { ns: string;
         ))}
       </nav>
       
-      {collapsed ? <div className="my-3 border-t border-primary-800" /> : <p className={`${label} mt-6`}>Lainnya</p>}
+      {collapsed ? <div className="my-3 border-t border-primary-800" /> : <p className={`${nama} mt-6`}>Lainnya</p>}
       <Item href="/pengaturan" label="Pengaturan" icon={Settings} ns={ns} onNavigate={onNavigate} collapsed={collapsed} active={path.startsWith("/pengaturan")} />
       
       <div className="mt-auto border-t border-primary-800 pt-4">
         <button 
-          onClick={handleLogout} 
+          onClick={keluar} 
           title={collapsed ? "Keluar" : undefined} 
           className={clsx("w-full mb-3 flex items-center gap-2 px-3 text-sm text-primary-300 hover:text-white transition-colors", collapsed && "justify-center px-0")}
         >
