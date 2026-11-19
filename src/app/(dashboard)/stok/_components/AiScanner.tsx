@@ -1,65 +1,149 @@
 "use client";
-import { useState } from "react";
-import { motion } from "framer-motion";
+
+import { useEffect, useState } from "react";
 import { ScanSearch, Sparkles } from "lucide-react";
-import clsx from "clsx";
+import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 import { Button, Card } from "@/components/ui";
 
-type Status = "Baik" | "Cukup" | "Perlu dicek";
-const NILAI: Record<Status, number> = { Baik: 90, Cukup: 75, "Perlu dicek": 50 };
-const BAGIAN = ["Sirip", "Warna", "Aktivitas", "Mata", "Sisik"];
-const dari = (n: number): Status => (n >= 85 ? "Baik" : n >= 70 ? "Cukup" : "Perlu dicek");
-interface Hasil { nama: string; awal: Status; status: Status; skor: number }
-const warna = (s: Status) => (s === "Baik" ? "bg-emerald-500" : s === "Cukup" ? "bg-secondary-500" : "bg-red-500");
+// Sesuaikan path endpoint ini jika route AI scan di backend Anda memakai nama lain
+const SCAN_ENDPOINT = "/api/seller/products/scan";
 
-// CATATAN: ini simulasi tampilan. Hasil asli datang dari layanan AI Health Scanner di backend.
-export default function AiScanner({ fotoSiap, onTerapkan }: { fotoSiap: boolean; onTerapkan: (teks: string) => void }) {
+export interface HasilScanIkan {
+  jenis?: string;
+  category?: string;
+  categoryId?: number;
+  polaWarna?: string;
+  colorPattern?: string;
+  grade?: string;
+  tier?: string;
+  kesehatan?: string;
+  healthDescription?: string;
+}
+
+interface AiScannerProps {
+  fileFoto?: File | null;
+  onHasil?: (hasil: HasilScanIkan) => void;
+  onTerapkan?: (teks: string) => void;
+}
+
+export default function AiScanner({
+  fileFoto,
+  onHasil,
+  onTerapkan,
+}: AiScannerProps) {
   const toast = useToast();
+  const [localFile, setLocalFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [hasil, setHasil] = useState<Hasil[] | null>(null);
-  const scan = () => {
-    setScanning(true); setHasil(null);
-    setTimeout(() => {
-      setHasil(BAGIAN.map(nama => { const n = 72 + Math.round(Math.random() * 25); return { nama, awal: dari(n), status: dari(n), skor: n }; }));
+  const [error, setError] = useState("");
+
+  const activeFile = localFile ?? (fileFoto instanceof Blob ? (fileFoto as File) : null);
+
+  useEffect(() => {
+    if (!activeFile || !(activeFile instanceof Blob)) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(activeFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [activeFile]);
+
+  const handleScan = async () => {
+    if (!activeFile) {
+      setError("Pilih atau unggah foto ikan terlebih dahulu.");
+      return;
+    }
+
+    setError("");
+    setScanning(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", activeFile);
+
+      const res = await api<Record<string, unknown>>(SCAN_ENDPOINT, {
+        method: "POST",
+        body: formData,
+      });
+
+      const hasil = (res.data ?? res) as HasilScanIkan;
+      onHasil?.(hasil);
+
+      const deskripsi = hasil.healthDescription ?? hasil.kesehatan;
+      if (deskripsi) {
+        onTerapkan?.(deskripsi);
+      }
+
+      toast("Foto berhasil dipindai dan kolom terisi otomatis");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Gagal memindai foto ikan. Pastikan backend aktif."
+      );
+    } finally {
       setScanning(false);
-    }, 1800);
+    }
   };
-  const ubah = (i: number, status: Status) => setHasil(h => h!.map((x, j) => (j === i ? { ...x, status, skor: status === x.awal ? x.skor : NILAI[status] } : x)));
-  const total = hasil ? Math.round(hasil.reduce((n, h) => n + h.skor, 0) / hasil.length) : 0;
-  const kategori = total >= 85 ? "Sehat" : total >= 70 ? "Cukup Sehat" : "Perlu Perhatian";
-  const dikoreksi = !!hasil?.some(h => h.status !== h.awal);
-  const terapkan = () => {
-    onTerapkan(`Hasil pindai AI: kondisi ${kategori.toLowerCase()} (skor ${total}/100). ${hasil!.map(h => `${h.nama.toLowerCase()} ${h.status.toLowerCase()}`).join(", ")}.${dikoreksi ? " Telah dikoreksi penjual." : ""}`);
-    toast("Hasil pindai diterapkan ke deskripsi kesehatan");
-  };
+
   return (
     <Card>
-      <div className="mb-3 flex items-center gap-2"><Sparkles size={16} className="text-secondary-600" /><h3 className="font-semibold">AI Health Scanner</h3></div>
-      {!hasil && !scanning && (<>
-        <p className="mb-3 text-sm text-primary-500">Pindai foto ikan untuk memperkirakan kondisi sirip, warna, aktivitas, mata, dan sisik. Hasilnya tampil juga di halaman produk pembeli.</p>
-        <Button className="w-full" disabled={!fotoSiap} onClick={scan}><ScanSearch size={16} />Pindai Kesehatan Ikan</Button>
-        {!fotoSiap && <p className="mt-2 text-xs text-primary-400">Unggah minimal satu foto ikan dulu untuk memindai.</p>}
-      </>)}
-      {scanning && (
-        <div className="py-2"><p className="mb-2 text-sm text-primary-600">Menganalisis foto ikan…</p>
-          <div className="h-2 overflow-hidden rounded-full bg-primary-50"><motion.div className="h-full rounded-full bg-gold" initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 1.8, ease: "easeInOut" }} /></div></div>)}
-      {hasil && (<>
-        <div className="mb-3 flex items-end justify-between">
-          <div><p className="text-xs text-primary-400">Skor kesehatan</p><p className="text-3xl font-bold">{total}<span className="text-base font-medium text-primary-400">/100</span></p></div>
-          <span className={clsx("rounded-full px-3 py-1 text-sm font-semibold", total >= 85 ? "bg-emerald-50 text-emerald-600" : total >= 70 ? "bg-secondary-100 text-secondary-700" : "bg-red-50 text-red-600")}>{kategori}</span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-secondary-600" />
+            <h3 className="font-semibold">Deteksi Otomatis Foto Ikan</h3>
+          </div>
+          <p className="text-xs text-primary-500">
+            Analisis foto pertama untuk mengisi jenis, pola warna, grade, dan tier.
+          </p>
         </div>
-        <ul className="space-y-3">{hasil.map((h, i) => (
-          <li key={h.nama}>
-            <div className="mb-1 flex items-center justify-between text-sm"><span>{h.nama}</span>
-              <select value={h.status} onChange={e => ubah(i, e.target.value as Status)} aria-label={`Koreksi ${h.nama}`} className="rounded-md border border-primary-100 bg-white px-1.5 py-0.5 text-xs font-medium">
-                <option>Baik</option><option>Cukup</option><option>Perlu dicek</option></select></div>
-            <div className="h-1.5 rounded-full bg-primary-50"><motion.div className={clsx("h-full rounded-full", warna(h.status))} initial={{ width: 0 }} animate={{ width: `${h.skor}%` }} transition={{ duration: 0.6 }} /></div>
-          </li>))}</ul>
-        {dikoreksi && <p className="mt-3 text-xs font-medium text-secondary-700">Sudah dikoreksi oleh penjual</p>}
-        <p className="mt-3 text-xs text-primary-400">Hasil perkiraan AI. Ubah pilihan di atas bila kondisi sebenarnya berbeda. Penjual tetap bertanggung jawab atas kondisi ikan.</p>
-        <div className="mt-3 flex gap-2"><Button className="flex-1 !py-2" onClick={terapkan}>Terapkan ke Deskripsi</Button><Button variant="outline" className="!py-2" onClick={scan}>Pindai Ulang</Button></div>
-      </>)}
+
+        <Button
+          type="button"
+          onClick={handleScan}
+          disabled={!activeFile || scanning}
+          className="!bg-primary-950 hover:!bg-primary-900"
+        >
+          <ScanSearch size={16} />
+          {scanning ? "Memindai..." : "Pindai Foto"}
+        </Button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-primary-100 bg-primary-50/50 p-3">
+        {previewUrl && (
+          <img
+            src={previewUrl}
+            alt="Pratinjau foto ikan"
+            className="h-14 w-14 rounded-lg border border-primary-100 object-cover"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          {activeFile && (
+            <p className="mb-1 truncate text-xs font-medium text-primary-700">
+              {activeFile.name}
+            </p>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              setLocalFile(f);
+              setError("");
+            }}
+            className="text-xs text-primary-600"
+          />
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+          {error}
+        </div>
+      )}
     </Card>
   );
 }
