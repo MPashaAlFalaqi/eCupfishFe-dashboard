@@ -1,6 +1,5 @@
 import type { Ikan } from "@/lib/types";
 
-// Simpan sebagai: src/lib/products.ts
 export interface ApiMedia {
   id: number;
   type: "PHOTO" | "VIDEO";
@@ -16,12 +15,17 @@ export interface ApiProduct {
   categoryId: number;
   grade: "CONTEST" | "PLAYER" | "PET";
   tier: string | null;
+  colorPattern?: string | null;
+  aiConfidence?: number | null;
   ageMonths: number | null;
   price: number;
   stock: number;
+  sellableStock?: number;
   lowStockThreshold: number;
   autoStatus: boolean;
-  status: "AVAILABLE" | "SOLD_OUT" | "INACTIVE";
+  strictThreshold?: boolean;
+  isLowStock?: boolean;
+  status: "AVAILABLE" | "LOW_STOCK" | "SOLD_OUT" | "INACTIVE";
   listed: boolean;
   tankLocation: string | null;
   healthDescription: string | null;
@@ -32,23 +36,34 @@ export interface ApiProduct {
   media: ApiMedia[];
 }
 
-export const GRADE_LABEL = { CONTEST: "Contest", PLAYER: "Player", PET: "Pet" } as const;
+export const GRADE_LABEL = {
+  CONTEST: "Contest",
+  PLAYER: "Player",
+  PET: "Pet",
+} as const;
 
-// Menerjemahkan data API ke bentuk Ikan yang dipakai StokTable.
-// Catatan: StokTable menampilkan `varian` di bawah nama ikan, jadi diisi lokasi akuarium
-// (bila kosong, tampilkan tipe Contest/Player/Pet).
 export function toIkan(p: ApiProduct): Ikan {
+  const status: Ikan["status"] =
+    p.status === "AVAILABLE"
+      ? "Tersedia"
+      : p.status === "LOW_STOCK"
+      ? "Menipis"
+      : "Habis";
+
   return {
     id: String(p.id),
     nama: p.name,
     jenis: p.category,
-    varian: p.tankLocation || GRADE_LABEL[p.grade],
+    varian: GRADE_LABEL[p.grade],
     grade: (p.tier ?? "C") as Ikan["grade"],
     usia: p.ageMonths ?? 0,
     stok: p.stock,
+    ambangBatas: p.lowStockThreshold,
+    otomatis: p.autoStatus,
+    kunciAmbang: p.strictThreshold ?? false,
     harga: p.price,
     publish: p.listed,
-    status: p.status === "AVAILABLE" ? "Tersedia" : "Habis",
+    status,
     kesehatan: p.healthDescription ?? "",
     warna: "blue",
   };

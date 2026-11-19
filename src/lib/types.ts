@@ -1,6 +1,22 @@
 export type Grade = "S" | "A" | "B" | "C";
-export type StatusStok = "Tersedia" | "Habis";
-export interface Ikan { id: string; harga: number; publish: boolean; nama: string; jenis: string; warna: "blue" | "gold" | "navy"; varian: string; grade: Grade; usia: number; stok: number; status: StatusStok; kesehatan: string; }
+export type StatusStok = "Tersedia" | "Menipis" | "Habis";
+export interface Ikan {
+  id: string;
+  harga: number;
+  publish: boolean;
+  nama: string;
+  jenis: string;
+  warna: "blue" | "gold" | "navy";
+  varian: string;
+  grade: Grade;
+  usia: number;
+  stok: number;
+  ambangBatas?: number;
+  otomatis?: boolean;
+  kunciAmbang?: boolean;
+  status: StatusStok;
+  kesehatan: string;
+}
 export type StatusKirim = "Diproses" | "Dalam Pengiriman" | "Diterima" | "Terlambat";
 export interface Pengiriman { id: string; pembeli: string; ikan: string; kurir: string; resi: string; grade: string; tanggalKirim: string; alamat: string; telp: string; berat: number; status: StatusKirim; }
 export type StatusKlaim = "Pending" | "Disetujui" | "Ditolak";
