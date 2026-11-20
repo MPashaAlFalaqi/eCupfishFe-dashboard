@@ -41,6 +41,9 @@ export default function AuthGuard({
         if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
           session.clear();
           router.replace("/login");
+        } else if (session.user && roles.includes(session.user.role)) {
+          // Fallback sesi lokal jika server backend offline/demo
+          if (!batal) setSiap(true);
         } else if (!batal) {
           setGagal(pesan);
         }

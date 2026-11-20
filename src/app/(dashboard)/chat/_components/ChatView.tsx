@@ -7,6 +7,8 @@ import SearchInput from "@/components/SearchInput";
 import { Card } from "@/components/ui";
 import { api, jsonBody, session } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
+import ResetDataButton from "@/components/ResetDataButton";
+import { chatList } from "@/lib/mock-data";
 
 interface ConvItem {
   id: number;
@@ -31,7 +33,7 @@ const quick = [
   "Terima kasih sudah berbelanja di tambak kami!",
 ];
 
-export default function ChatView() {
+export default function ChatView({ data }: { data?: any } = {}) {
   const meId = session.user?.id;
   const [list, setList] = useState<ConvItem[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -42,11 +44,67 @@ export default function ChatView() {
   const end = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api<{ data: ConvItem[] }>("/api/conversations").then((r) => {
-      setList(r.data);
-      if (r.data.length > 0) setActiveId(r.data[0].id);
-    });
-  }, []);
+    let timer: NodeJS.Timeout;
+
+    const loadSyncMessages = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/chat/messages");
+        if (res.ok) {
+          const json = await res.json();
+          const remoteMsgs = json.data || [];
+          if (remoteMsgs.length > 0) {
+            const buyerMsg = remoteMsgs.find((m: any) => m.sender === "BUYER");
+            const buyerName = buyerMsg?.senderName || "Pembeli (Mobile)";
+            const lastMsg = remoteMsgs[remoteMsgs.length - 1];
+
+            const conv: ConvItem = {
+              id: 1,
+              buyer: { id: 101, name: buyerName },
+              product: { id: 201, name: "Tanya Penjual (Live Mobile)" },
+              lastMessage: lastMsg?.body || "Mulai percakapan...",
+              unreadCount: 0,
+            };
+
+            setList([conv]);
+            setActiveId(1);
+            setMessages(
+              remoteMsgs.map((m: any, idx: number) => ({
+                id: m.id || idx + 1,
+                conversationId: 1,
+                senderId: m.sender === "SELLER" ? (meId ?? 1) : 101,
+                body: m.body,
+                createdAt: m.createdAt || new Date().toISOString(),
+              }))
+            );
+            return;
+          }
+        }
+      } catch {}
+
+      // Jika kosong atau backend belum merespons pesan, biarkan list bersih dari nol
+      api<{ data: ConvItem[] }>("/api/conversations")
+        .then((r) => {
+          if (r.data && r.data.length > 0) {
+            setList(r.data);
+            setActiveId(r.data[0].id);
+          } else {
+            setList([]);
+            setActiveId(null);
+            setMessages([]);
+          }
+        })
+        .catch(() => {
+          setList([]);
+          setActiveId(null);
+          setMessages([]);
+        });
+    };
+
+    loadSyncMessages();
+    timer = setInterval(loadSyncMessages, 2000);
+
+    return () => clearInterval(timer);
+  }, [meId]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -72,8 +130,74 @@ export default function ChatView() {
       );
     };
     sock.on("chat:message", onNewMsg);
+    sock.on("chat:global", (data: any) => {
+      if (data?.message) onNewMsg(data.message);
+    });
+
+    // Cross-tab / Broadcast sync
+    let chatBc: BroadcastChannel | null = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      chatBc = new BroadcastChannel("ecupfish_chat_bus");
+      chatBc.onmessage = (e) => {
+        if (e.data?.type === "BUYER_MESSAGE" && e.data?.body) {
+          const newMsg: MsgItem = {
+            id: Date.now(),
+            conversationId: activeId,
+            senderId: 100,
+            body: e.data.body,
+            createdAt: e.data.createdAt || new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, newMsg]);
+          setList((prev) =>
+            prev.map((c) =>
+              c.id === activeId
+                ? {
+                    ...c,
+                    buyer: { ...c.buyer, name: e.data.buyerName || c.buyer.name },
+                    lastMessage: e.data.body,
+                  }
+                : c
+            )
+          );
+        }
+      };
+    }
+
+    const handleChatStorage = (e: StorageEvent) => {
+      if (e.key === "ecupfish_chat_sync" && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (data.type === "BUYER_MESSAGE" && data.body) {
+            const newMsg: MsgItem = {
+              id: Date.now(),
+              conversationId: activeId,
+              senderId: 100,
+              body: data.body,
+              createdAt: data.createdAt || new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, newMsg]);
+            setList((prev) =>
+              prev.map((c) =>
+                c.id === activeId
+                  ? {
+                      ...c,
+                      buyer: { ...c.buyer, name: data.buyerName || c.buyer.name },
+                      lastMessage: data.body,
+                    }
+                  : c
+              )
+            );
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleChatStorage);
+
     return () => {
       sock.off("chat:message", onNewMsg);
+      sock.off("chat:global");
+      if (chatBc) chatBc.close();
+      window.removeEventListener("storage", handleChatStorage);
     };
   }, [activeId]);
 
@@ -83,14 +207,70 @@ export default function ChatView() {
 
   const send = async (t: string) => {
     if (!t.trim() || !activeId) return;
+    const bodyText = t.trim();
     setText("");
-    const res = await api<{ data: MsgItem }>(
-      `/api/conversations/${activeId}/messages`,
-      { method: "POST", body: jsonBody({ body: t.trim() }) }
-    );
-    setMessages((prev) =>
-      prev.some((m) => m.id === res.data.id) ? prev : [...prev, res.data]
-    );
+
+    // Kirim ke universal backend relay endpoint untuk mobile
+    try {
+      fetch("http://localhost:3000/api/chat/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sender: "SELLER",
+          senderName: "Betta King Jakarta (Penjual Official)",
+          body: bodyText,
+        }),
+      }).catch(() => {});
+    } catch {}
+
+    // Broadcast ke pembeli mobile secara realtime
+    try {
+      const bc = new BroadcastChannel("ecupfish_chat_bus");
+      bc.postMessage({
+        type: "SELLER_MESSAGE",
+        conversationId: activeId,
+        body: bodyText,
+        createdAt: new Date().toISOString(),
+      });
+      bc.close();
+    } catch {}
+    try {
+      localStorage.setItem(
+        "ecupfish_chat_sync",
+        JSON.stringify({
+          type: "SELLER_MESSAGE",
+          conversationId: activeId,
+          body: bodyText,
+          createdAt: new Date().toISOString(),
+          ts: Date.now(),
+        })
+      );
+    } catch {}
+
+    try {
+      const res = await api<{ data: MsgItem }>(
+        `/api/conversations/${activeId}/messages`,
+        { method: "POST", body: jsonBody({ body: bodyText }) }
+      );
+      setMessages((prev) =>
+        prev.some((m) => m.id === res.data.id) ? prev : [...prev, res.data]
+      );
+    } catch {
+      // Fallback live real-time local message
+      const localMsg: MsgItem = {
+        id: Date.now(),
+        conversationId: activeId,
+        senderId: meId ?? 1,
+        body: bodyText,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, localMsg]);
+      setList((prev) =>
+        prev.map((c) =>
+          c.id === activeId ? { ...c, lastMessage: bodyText } : c
+        )
+      );
+    }
   };
 
   const cur = list.find((c) => c.id === activeId);
@@ -102,7 +282,11 @@ export default function ChatView() {
 
   return (
     <>
-      <Topbar title="Chat" subtitle="Percakapan real-time dengan pembeli" />
+      <Topbar
+        title="Chat"
+        subtitle="Percakapan real-time dengan pembeli ikan cupang"
+        action={<ResetDataButton label="Reset Data" />}
+      />
       <div className="grid h-[calc(100vh-11rem)] min-h-[460px] gap-4 lg:grid-cols-[340px_1fr]">
         <Card
           className={clsx(

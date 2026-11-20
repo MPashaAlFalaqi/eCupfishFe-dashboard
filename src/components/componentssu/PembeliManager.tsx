@@ -20,7 +20,11 @@ import {
   UserCheck,
   UserX,
   History,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
 import { Pembeli } from "@/data/mockData";
 
@@ -44,6 +48,8 @@ export const PembeliManager: React.FC<PembeliManagerProps> = ({
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("spending");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(5);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [blockModalBuyer, setBlockModalBuyer] = useState<Pembeli | null>(null);
   const [blockReason, setBlockReason] = useState<string>("");
@@ -89,6 +95,12 @@ export const PembeliManager: React.FC<PembeliManagerProps> = ({
         return 0;
       });
   }, [pembeliList, filterStatus, searchQuery, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / pageSize));
+  const displayedBuyers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredList.slice(start, start + pageSize);
+  }, [filteredList, currentPage, pageSize]);
 
   const countAll = pembeliList.length;
   const countActive = pembeliList.filter((b) => b.status === "aktif").length;
@@ -255,7 +267,7 @@ export const PembeliManager: React.FC<PembeliManagerProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {filteredList.map((buyer) => (
+              {displayedBuyers.map((buyer) => (
                 <tr key={buyer.id} className="hover:bg-slate-50/80 transition-colors group">
                   {/* Avatar & Profile */}
                   <td className="py-3.5 px-4">
@@ -393,6 +405,74 @@ export const PembeliManager: React.FC<PembeliManagerProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Bar Pagination */}
+        {filteredList.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-500 bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <span>
+                Menampilkan <b className="text-slate-800">{(currentPage - 1) * pageSize + 1}</b>–
+                <b className="text-slate-800">{Math.min(currentPage * pageSize, filteredList.length)}</b> dari{" "}
+                <b className="text-slate-800">{filteredList.length}</b> pembeli
+              </span>
+              <div className="ml-2 flex items-center gap-1.5">
+                <span className="text-[11px] text-slate-400">Baris:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-700 outline-none"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <span className="px-2 text-xs font-semibold text-slate-700">
+                Hal {currentPage} dari {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ChevronsRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Detail Pembeli */}

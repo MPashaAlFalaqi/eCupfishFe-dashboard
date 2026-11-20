@@ -18,6 +18,7 @@ import Modal from "@/components/Modal";
 import { useToast } from "@/components/Toast";
 import { Button, Card } from "@/components/ui";
 import { api, ApiError, jsonBody } from "@/lib/api";
+import ResetDataButton from "@/components/ResetDataButton";
 
 type Key = "profil" | "pengiriman" | "notifikasi" | "keamanan";
 
@@ -247,6 +248,7 @@ export default function PengaturanPage() {
       <Topbar
         title="Pengaturan Toko"
         subtitle="Kelola informasi profil, alamat pengiriman, preferensi notifikasi, dan keamanan akun."
+        action={<ResetDataButton label="Reset Data" />}
       />
 
       <div className="grid gap-4 lg:grid-cols-[250px_1fr]">

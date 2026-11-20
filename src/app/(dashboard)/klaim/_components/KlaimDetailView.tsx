@@ -21,7 +21,7 @@ const tone = { Pending: "gold", Disetujui: "green", Ditolak: "gray" } as const;
 
 export default function KlaimDetailView({ klaim }: { klaim: Klaim }) {
   const toast = useToast();
-  const { klaim: klaimState } = useDashboardData();
+  const { klaim: klaimState, updateKlaim } = useDashboardData();
   const terkini = klaimState.find(k => k.id === klaim.id) ?? klaim;
   const [status, setStatus] = useState<StatusKlaim>(terkini.status);
   const [ringkasan, setRingkasan] = useState("");
@@ -29,10 +29,11 @@ export default function KlaimDetailView({ klaim }: { klaim: Klaim }) {
   const decide = (s: "Disetujui" | "Ditolak", r: string) => {
     setStatus(s);
     setRingkasan(r);
+    updateKlaim(terkini.id, s);
     toast(
       s === "Disetujui"
-        ? "Klaim disetujui & status pembayaran diperbarui"
-        : "Klaim ditolak, pembeli diberi tahu"
+        ? "Klaim disetujui & status pembayaran pesanan otomatis diperbarui!"
+        : "Klaim ditolak, pembeli telah diberi tahu."
     );
   };
 

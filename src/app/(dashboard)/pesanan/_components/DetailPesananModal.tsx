@@ -32,14 +32,20 @@ export default function DetailPesananModal({
   const footer = (
     <>
       {data.status === "Menunggu Bayar" && (
-        <Button
-          variant="outline"
-          className={danger}
-          onClick={() => go("Dibatalkan")}
-        >
-          <X size={16} />
-          Batalkan Pesanan
-        </Button>
+        <>
+          <Button
+            variant="outline"
+            className={danger}
+            onClick={() => go("Dibatalkan")}
+          >
+            <X size={16} />
+            Batalkan
+          </Button>
+          <Button onClick={() => go("Dibayar")}>
+            <Check size={16} />
+            Konfirmasi Bayar
+          </Button>
+        </>
       )}
       {data.status === "Dibayar" && (
         <>
@@ -57,15 +63,24 @@ export default function DetailPesananModal({
         </>
       )}
       {data.status === "Dikemas" && (
-        <Button disabled={!resi.trim()} onClick={() => go("Dikirim")}>
+        <Button
+          disabled={!resi.trim()}
+          onClick={() => go("Dikirim")}
+        >
           <Check size={16} />
           Tandai Dikirim
         </Button>
       )}
       {data.status === "Dikirim" && (
-        <Link href="/pengiriman">
-          <Button>Lihat Pengiriman</Button>
-        </Link>
+        <>
+          <Link href="/pengiriman">
+            <Button variant="outline">Lihat Pengiriman</Button>
+          </Link>
+          <Button onClick={() => go("Selesai")}>
+            <Check size={16} />
+            Konfirmasi Tiba & Selesai
+          </Button>
+        </>
       )}
       {data.status !== "Dibatalkan" && (
         <a href={`/invoice/${data.id.slice(1)}`} target="_blank" rel="noreferrer">
@@ -139,12 +154,25 @@ export default function DetailPesananModal({
         <>
           <hr className="-mx-5 border-primary-50" />
           <div>
-            <label className="label">Nomor Resi</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label !mb-0">Nomor Resi Pengiriman</label>
+              <button
+                type="button"
+                onClick={() =>
+                  setResi(
+                    `JNE-${Date.now().toString().slice(-6)}-${Math.floor(10 + Math.random() * 89)}`
+                  )
+                }
+                className="text-xs font-semibold text-primary-600 hover:text-primary-800 underline"
+              >
+                Buat Resi Otomatis
+              </button>
+            </div>
             <input
-              className="input"
+              className="input font-mono font-bold"
               value={resi}
               onChange={e => setResi(e.target.value)}
-              placeholder="Masukkan nomor resi untuk menandai dikirim"
+              placeholder="Contoh: JNE-928192-34"
             />
           </div>
         </>
