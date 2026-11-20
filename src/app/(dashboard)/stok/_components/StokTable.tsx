@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Plus, RotateCcw, SquarePen, Trash2 } from "lucide-react";
+import { Plus, SquarePen, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import Topbar from "@/components/Topbar";
 import Modal from "@/components/Modal";
@@ -10,6 +10,7 @@ import FilterBar from "@/components/FilterBar";
 import DataTable, { type Column } from "@/components/DataTable";
 import { Button, Card } from "@/components/ui";
 import { useDashboardData } from "@/components/DashboardDataProvider";
+import ResetDataButton from "@/components/ResetDataButton";
 import type { Grade, Ikan } from "@/lib/types";
 import KetersediaanModal from "./KetersediaanModal";
 
@@ -132,22 +133,8 @@ export default function StokTable({ data }: { data?: Ikan[] }) {
         title="Manajemen Stok Cupang"
         subtitle={`${items.length} varian cupang · ${total.toLocaleString("id-ID")} ekor total stok aktif`}
         action={
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                resetSemuaData();
-                setQ("");
-                setJenis("");
-                setGrade("");
-                setStatus("");
-                toast("Data stok dipulihkan ke awal");
-              }}
-            >
-              <RotateCcw size={15} />
-              Reset Data
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <ResetDataButton label="Reset Data" />
             <Link href="/stok/baru">
               <Button>
                 <Plus size={16} />

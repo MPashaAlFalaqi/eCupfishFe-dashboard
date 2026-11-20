@@ -1,322 +1,210 @@
 "use client";
+
 import { useState } from "react";
-import {
-  GripVertical,
-  Hourglass,
-  Landmark,
-  Plus,
-  Receipt,
-  Wallet,
-  CreditCard,
-  ArrowRight,
-} from "lucide-react";
-import clsx from "clsx";
-import { Reorder } from "framer-motion";
-import { useToast } from "@/components/Toast";
+import { Truck, PackageCheck, Hourglass, AlertCircle } from "lucide-react";
 import Topbar from "@/components/Topbar";
 import StatCard from "@/components/StatCard";
 import FilterBar, { usePeriode } from "@/components/FilterBar";
 import { dalamPeriode, ekstrakTanggal } from "@/lib/periode";
-import Modal from "@/components/Modal";
 import DataTable, { type Column } from "@/components/DataTable";
-import { Button, Card, Pill } from "@/components/ui";
-import { rp } from "@/lib/format";
+import { Button, Card } from "@/components/ui";
 import { useDashboardData } from "@/components/DashboardDataProvider";
-import type { Pembayaran } from "@/lib/types";
+import ResetDataButton from "@/components/ResetDataButton";
+import type { Pengiriman } from "@/lib/types";
+import StatusBadge from "./StatusBadge";
+import DetailPengirimanModal from "./DetailPengirimanModal";
 
-const tone = {
-  "Dalam Proses": "gold",
-  Diteruskan: "green",
-  Dikembalikan: "red",
-} as const;
-const bersih = (p: Pembayaran) =>
-  p.status === "Dikembalikan" ? 0 : p.kotor - p.komisi - p.gateway;
-const langkah = [
-  "Pembeli bayar di aplikasi",
-  "Dana diterima gateway",
-  "Pesanan tiba + jeda garansi 1×24 jam",
-  "Diteruskan ke rekening Anda",
-];
+export default function PengirimanView({ data }: { data?: Pengiriman[] }) {
+  const { pengiriman } = useDashboardData();
+  const list = pengiriman.length > 0 ? pengiriman : data ?? [];
 
-export default function PembayaranView({
-  data,
-  rekening,
-}: {
-  data?: Pembayaran[];
-  rekening?: string[];
-}) {
-  const { pembayaran, rekening: reks, setRekening: setReks } = useDashboardData();
-  const list = pembayaran.length > 0 ? pembayaran : data ?? [];
-  const rekeningList = reks.length > 0 ? reks : rekening ?? [];
-  const toast = useToast();
-  const [sel, setSel] = useState<Pembayaran | null>(null);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
-  const [metode, setMetode] = useState("");
+  const [kurir, setKurir] = useState("");
   const periode = usePeriode();
+  const [sel, setSel] = useState<Pengiriman | null>(null);
 
-  const metodeList = Array.from(new Set(list.map(d => d.metode)));
   const k = q.toLowerCase();
-  const rows = list.filter(
-    d =>
-      (!status || d.status === status) &&
-      (!metode || d.metode === metode) &&
-      dalamPeriode(
-        ekstrakTanggal(d.tanggal),
-        periode.value,
-        periode.dari,
-        periode.sampai
-      ) &&
-      [d.pesanan, d.pembeli].some(v => v.toLowerCase().includes(k))
-  );
+  const kurirList = Array.from(new Set(list.map(r => r.kurir).filter(Boolean)));
 
-  const diterima = list
-    .filter(d => d.status === "Diteruskan")
-    .reduce((n, d) => n + bersih(d), 0);
-  const proses = list
-    .filter(d => d.status === "Dalam Proses")
-    .reduce((n, d) => n + bersih(d), 0);
-  const totalKomisi = list
-    .filter(d => d.status !== "Dikembalikan")
-    .reduce((n, d) => n + d.komisi, 0);
-  const totalGateway = list
-    .filter(d => d.status !== "Dikembalikan")
-    .reduce((n, d) => n + d.gateway, 0);
+  const rows = list.filter(r => {
+    const matchStatus = !status || r.status === status;
+    const matchKurir = !kurir || r.kurir === kurir;
+    const matchPeriode = dalamPeriode(
+      ekstrakTanggal(r.tanggalKirim),
+      periode.value,
+      periode.dari,
+      periode.sampai
+    );
+    const matchQuery =
+      !k ||
+      [r.id, r.resi, r.pembeli, r.ikan, r.kurir, r.alamat].some(v =>
+        v.toLowerCase().includes(k)
+      );
+    return matchStatus && matchKurir && matchPeriode && matchQuery;
+  });
 
-  const columns: Column<Pembayaran>[] = [
-    { header: "Tanggal", cell: r => r.tanggal },
+  const diproses = list.filter(r => r.status === "Diproses").length;
+  const dalamKirim = list.filter(r => r.status === "Dalam Pengiriman").length;
+  const diterima = list.filter(r => r.status === "Diterima").length;
+  const terlambat = list.filter(r => r.status === "Terlambat").length;
+
+  const columns: Column<Pengiriman>[] = [
     {
-      header: "Pesanan",
+      header: "No. Pesanan",
       cell: r => (
         <div>
-          <p className="font-bold">{r.pesanan}</p>
-          <p className="text-xs text-primary-400">{r.pembeli}</p>
+          <b className="text-primary-900 font-bold">{r.id}</b>
+          <p className="text-xs text-primary-400">Grade {r.grade}</p>
         </div>
       ),
     },
-    { header: "Metode", cell: r => r.metode },
-    { header: "Dibayar Pembeli", cell: r => rp(r.kotor) },
     {
-      header: "Potongan",
+      header: "Pembeli & Alamat",
+      cell: r => (
+        <div className="max-w-[220px]">
+          <p className="font-semibold text-primary-900 leading-tight">{r.pembeli}</p>
+          <p className="text-xs text-primary-500 truncate" title={r.alamat}>
+            {r.alamat}
+          </p>
+          <p className="text-[11px] text-primary-400">{r.telp}</p>
+        </div>
+      ),
+    },
+    {
+      header: "Ikan & Jumlah",
+      cell: r => (
+        <div>
+          <p className="font-medium text-primary-900 leading-tight">{r.ikan}</p>
+          <p className="text-xs text-primary-400">{r.berat} kg (perkiraan berat)</p>
+        </div>
+      ),
+    },
+    {
+      header: "Jenis Kurir",
+      cell: r => (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-800">
+          <Truck size={14} className="text-primary-500 shrink-0" />
+          {r.kurir}
+        </span>
+      ),
+    },
+    {
+      header: "No. Resi Pengiriman",
       cell: r =>
-        r.komisi + r.gateway ? (
-          <span className="text-red-500">- {rp(r.komisi + r.gateway)}</span>
+        r.resi && r.resi !== "—" ? (
+          <span className="inline-block rounded border border-primary-200 bg-primary-50 px-2 py-0.5 font-mono text-xs font-bold text-primary-900">
+            {r.resi}
+          </span>
         ) : (
-          "—"
+          <span className="inline-block rounded border border-dashed border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-400 italic">
+            Belum ada resi
+          </span>
         ),
     },
     {
-      header: "Diterima",
-      cell: r => (
-        <b className={clsx(r.status === "Dikembalikan" && "text-primary-300")}>
-          {rp(bersih(r))}
-        </b>
-      ),
+      header: "Status Kirim",
+      cell: r => <StatusBadge status={r.status} />,
     },
-    { header: "Status", cell: r => <Pill tone={tone[r.status]}>{r.status}</Pill> },
+    {
+      header: "Tanggal Kirim",
+      cell: r => <span className="text-xs text-primary-600">{r.tanggalKirim}</span>,
+    },
     {
       header: "Aksi",
       cell: r => (
         <Button
-          variant="outline"
-          className="!px-4 !py-1.5"
+          variant={r.status === "Dalam Pengiriman" ? "primary" : "outline"}
+          className="!px-3.5 !py-1 text-xs font-semibold"
           onClick={() => setSel(r)}
         >
-          Detail
+          {r.status === "Diproses"
+            ? "Kirim"
+            : r.status === "Diterima"
+            ? "Detail"
+            : "Lacak"}
         </Button>
       ),
     },
   ];
 
-  const rinci: [string, string][] = sel
-    ? [
-        ["Dibayar pembeli", rp(sel.kotor)],
-        ["Komisi platform 5%", `- ${rp(sel.komisi)}`],
-        ["Biaya gateway", `- ${rp(sel.gateway)}`],
-      ]
-    : [];
-
   return (
     <>
       <Topbar
-        title="Pembayaran Masuk"
-        subtitle="Pembayaran pembeli diteruskan langsung ke rekening Anda"
+        title="Pengiriman Ikan"
+        subtitle="Pantau status kirim, kurir, dan no. resi seluruh pesanan pembeli yang terintegrasi"
+        action={<ResetDataButton label="Reset Data" />}
       />
+
       <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          variant="blue"
-          label="Diterima"
-          value={rp(diterima)}
-          note="Sudah masuk rekening"
-          icon={Wallet}
-        />
-        <StatCard
-          label="Dalam Proses"
-          value={rp(proses)}
-          note="Menunggu pesanan tiba"
+          label="Sedang Diproses"
+          value={String(diproses)}
+          note="Siap kemas & tunggu kurir"
           icon={Hourglass}
         />
         <StatCard
-          label="Komisi Platform"
-          value={rp(totalKomisi)}
-          note="5% dari penjualan"
-          icon={Receipt}
+          variant="blue"
+          label="Dalam Pengiriman"
+          value={String(dalamKirim)}
+          note="Paket dalam perjalanan"
+          icon={Truck}
         />
         <StatCard
-          label="Biaya Gateway"
-          value={rp(totalGateway)}
-          note="Dipotong otomatis"
-          icon={CreditCard}
+          label="Diterima Pembeli"
+          value={String(diterima)}
+          note="Pesanan tiba dengan selamat"
+          icon={PackageCheck}
+        />
+        <StatCard
+          label="Perlu Perhatian"
+          value={String(terlambat)}
+          note={terlambat > 0 ? "Melewati jadwal estimasi" : "Semua pengiriman lancar"}
+          noteTone={terlambat > 0 ? "red" : "blue"}
+          icon={AlertCircle}
         />
       </div>
-      <Card className="mb-4">
-        <h3 className="mb-3 font-semibold">Cara dana sampai ke Anda</h3>
-        <ol className="flex flex-wrap items-center gap-2 text-sm">
-          {langkah.map((l, i) => (
-            <li key={l} className="flex items-center gap-2">
-              <span className="flex items-center gap-2 rounded-lg bg-primary-50 px-3 py-2">
-                <span className="grid h-5 w-5 place-items-center rounded-full bg-primary-400 text-xs font-bold text-white">
-                  {i + 1}
-                </span>
-                {l}
-              </span>
-              {i < langkah.length - 1 && (
-                <ArrowRight size={14} className="text-primary-300" />
-              )}
-            </li>
-          ))}
-        </ol>
+
+      <FilterBar
+        total={rows.length}
+        periode={periode}
+        search={{
+          value: q,
+          onChange: setQ,
+          placeholder: "Cari nomor resi, ID pesanan, pembeli, ikan...",
+        }}
+        filters={[
+          {
+            label: "Status",
+            value: status,
+            onChange: setStatus,
+            options: ["Diproses", "Dalam Pengiriman", "Diterima", "Terlambat"],
+          },
+          {
+            label: "Kurir",
+            value: kurir,
+            onChange: setKurir,
+            options: kurirList,
+          },
+        ]}
+      />
+
+      <Card className="!p-2">
+        <DataTable
+          columns={columns}
+          rows={rows}
+          empty="Pengiriman tidak ditemukan untuk filter ini"
+          rowClassName={r =>
+            r.status === "Dalam Pengiriman"
+              ? "bg-primary-50/50"
+              : r.status === "Terlambat"
+              ? "bg-red-50/40"
+              : ""
+          }
+        />
       </Card>
-      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-        <div className="min-w-0">
-          <FilterBar
-            total={rows.length}
-            periode={periode}
-            search={{
-              value: q,
-              onChange: setQ,
-              placeholder: "Cari pesanan atau pembeli...",
-            }}
-            filters={[
-              {
-                label: "Status",
-                value: status,
-                onChange: setStatus,
-                options: ["Dalam Proses", "Diteruskan", "Dikembalikan"],
-              },
-              {
-                label: "Metode",
-                value: metode,
-                onChange: setMetode,
-                options: metodeList,
-              },
-            ]}
-          />
-          <Card>
-            <h3 className="mb-2 font-semibold">Riwayat Pembayaran</h3>
-            <DataTable
-              columns={columns}
-              rows={rows}
-              empty="Pembayaran tidak ditemukan"
-            />
-          </Card>
-        </div>
-        <Card className="self-start">
-          <h3 className="mb-1 font-semibold">Rekening Penerima</h3>
-          <p className="mb-3 text-sm text-primary-500">
-            Seret untuk mengubah urutan. Rekening paling atas jadi rekening utama.
-          </p>
-          <Reorder.Group
-            as="ul"
-            axis="y"
-            values={rekeningList}
-            onReorder={setReks}
-            className="space-y-2"
-          >
-            {rekeningList.map((r, i) => (
-              <Reorder.Item
-                as="li"
-                key={r}
-                value={r}
-                whileDrag={{
-                  scale: 1.03,
-                  boxShadow: "0 10px 28px rgba(8,36,64,.18)",
-                }}
-                className="flex cursor-grab items-center gap-3 rounded-lg border border-primary-100 bg-white p-3 active:cursor-grabbing"
-              >
-                <GripVertical size={16} className="shrink-0 text-primary-300" />
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary-50 text-primary-500">
-                  <Landmark size={16} />
-                </span>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">{r.split(" · ")[0]}</p>
-                  <p className="text-xs text-primary-400">{r.split(" · ")[1]}</p>
-                </div>
-                {i === 0 ? (
-                  <Pill tone="blue">Utama</Pill>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setReks([r, ...rekeningList.filter(x => x !== r)]);
-                      toast("Rekening utama diganti");
-                    }}
-                    className="text-xs font-semibold text-primary-500"
-                  >
-                    Jadikan utama
-                  </button>
-                )}
-              </Reorder.Item>
-            ))}
-          </Reorder.Group>
-          <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary-200 py-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50">
-            <Plus size={16} />
-            Tambah Rekening
-          </button>
-        </Card>
-      </div>
-      <Modal
-        open={!!sel}
-        onClose={() => setSel(null)}
-        size="max-w-md"
-        title="Detail Pembayaran"
-        subtitle={sel ? `${sel.pesanan} · ${sel.tanggal}` : ""}
-        footer={
-          <Button variant="outline" onClick={() => setSel(null)}>
-            Tutup
-          </Button>
-        }
-      >
-        {sel && (
-          <>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold">{sel.pembeli}</p>
-                <p className="text-xs text-primary-400">{sel.metode}</p>
-              </div>
-              <Pill tone={tone[sel.status]}>{sel.status}</Pill>
-            </div>
-            <hr className="-mx-5 border-primary-50" />
-            <dl className="space-y-1.5 text-sm">
-              {rinci.map(([a, b]) => (
-                <div key={a} className="flex justify-between">
-                  <dt className="text-primary-500">{a}</dt>
-                  <dd>{b}</dd>
-                </div>
-              ))}
-              <div className="flex justify-between border-t border-primary-50 pt-2 font-bold">
-                <dt>Diterima penjual</dt>
-                <dd>{rp(bersih(sel))}</dd>
-              </div>
-            </dl>
-            <hr className="-mx-5 border-primary-50" />
-            <div className="text-sm">
-              <p className="font-semibold text-primary-500">Rekening tujuan</p>
-              <p>{rekeningList[0]}</p>
-              <p className="mt-2 text-primary-500">{sel.estimasi}</p>
-            </div>
-          </>
-        )}
-      </Modal>
+
+      <DetailPengirimanModal data={sel} onClose={() => setSel(null)} />
     </>
   );
 }

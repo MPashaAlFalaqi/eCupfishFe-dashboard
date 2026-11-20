@@ -8,9 +8,10 @@ export const ikanList: Ikan[] = [
 ];
 import type { Pengiriman } from "./types";
 export const pengirimanList: Pengiriman[] = [
-  { id: "#ORD-2298", alamat: "Jl. Raya Darmo No. 45, Surabaya", telp: "0812-3456-7801", berat: 3.5, pembeli: "Toko Ikan Segar Betta", ikan: "Cupang Giant Blue Rim · 25 ekor", kurir: "JNE Live Fish", resi: "12345678", grade: "A", tanggalKirim: "24 Sep 2026", status: "Dalam Pengiriman" },
-  { id: "#ORD-2295", alamat: "Jl. Veteran No. 12, Malang", telp: "0813-9988-2210", berat: 6, pembeli: "CV Mina Sejahtera", ikan: "Cupang Serit Avatar · 60 ekor", kurir: "Kurir Tambak Sendiri", resi: "—", grade: "C", tanggalKirim: "25 Sep 2026", status: "Diproses" },
-  { id: "#ORD-2291", alamat: "Jl. Pantai Indah No. 3, Banyuwangi", telp: "0857-1122-3344", berat: 4, pembeli: "Warung Ikan Bahari", ikan: "Cupang Halfmoon Merah · 40 ekor", kurir: "JNE Live Fish", resi: "12293841", grade: "A", tanggalKirim: "22 Sep 2026", status: "Terlambat" },
+  { id: "#PS-2091", alamat: "Jl. Melati No. 12, Surabaya", telp: "0812-3456-7801", berat: 2.5, pembeli: "Rina W.", ikan: "Halfmoon Blue Rim · 10 ekor", kurir: "JNE Live Fish", resi: "—", grade: "A", tanggalKirim: "03 Okt 2026", status: "Diproses" },
+  { id: "#PS-2088", alamat: "Jl. Anggrek No. 3, Kediri", telp: "0813-9988-2210", berat: 1.8, pembeli: "Doni A.", ikan: "Plakat Koi Galaxy · 7 ekor", kurir: "Dayak Fresh", resi: "—", grade: "B", tanggalKirim: "02 Okt 2026", status: "Diproses" },
+  { id: "#PS-2085", alamat: "Jl. Mawar No. 21, Blitar", telp: "0857-1122-3344", berat: 2.5, pembeli: "Sari M.", ikan: "Giant Nemo Fancy · 10 ekor", kurir: "JNE Live Fish", resi: "12293845", grade: "A", tanggalKirim: "30 Sep 2026", status: "Dalam Pengiriman" },
+  { id: "#PS-2081", alamat: "Jl. Dahlia No. 9, Madiun", telp: "0812-7788-9900", berat: 2.0, pembeli: "Eko P.", ikan: "Crowntail Red Dragon · 8 ekor", kurir: "Kurir Tambak Sendiri", resi: "12293842", grade: "B", tanggalKirim: "27 Sep 2026", status: "Diterima" },
 ];
 import type { Klaim } from "./types";
 export const klaimList: Klaim[] = [

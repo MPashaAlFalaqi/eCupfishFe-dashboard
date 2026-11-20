@@ -44,7 +44,7 @@ export default function DetailPengirimanModal({
   data: Pengiriman | null;
   onClose: () => void;
 }) {
-  const { updatePengiriman } = useDashboardData();
+  const { updatePengiriman, selesaikanPesanan } = useDashboardData();
   const toast = useToast();
   const [kurirInput, setKurirInput] = useState("");
   const [resiInput, setResiInput] = useState("");
@@ -64,12 +64,17 @@ export default function DetailPengirimanModal({
   const kurirOpsi = ["JNE Live Fish", "Dayak Fresh", "Kurir Tambak Sendiri"];
 
   const handleSimpan = () => {
-    updatePengiriman(data.id, {
-      kurir: kurirInput,
-      resi: resiInput.trim() || "—",
-      status: statusInput,
-    });
-    toast("Status & info pengiriman diperbarui");
+    if (statusInput === "Diterima") {
+      selesaikanPesanan(data.id);
+      toast("Pesanan telah selesai! Dana escrow diteruskan ke rekening dan ulasan dibuat.");
+    } else {
+      updatePengiriman(data.id, {
+        kurir: kurirInput,
+        resi: resiInput.trim() || "—",
+        status: statusInput,
+      });
+      toast("Status & info pengiriman diperbarui");
+    }
     onClose();
   };
 
@@ -131,10 +136,23 @@ export default function DetailPengirimanModal({
           </select>
         </div>
         <div>
-          <label className="label">Nomor Resi</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label !mb-0">Nomor Resi</label>
+            <button
+              type="button"
+              onClick={() =>
+                setResiInput(
+                  `JNE-${Date.now().toString().slice(-6)}-${Math.floor(10 + Math.random() * 89)}`
+                )
+              }
+              className="text-xs font-semibold text-primary-600 hover:text-primary-800 underline"
+            >
+              Buat Resi Otomatis
+            </button>
+          </div>
           <div className="relative">
             <input
-              className="input pr-10"
+              className="input pr-10 font-mono font-bold"
               value={resiInput}
               onChange={e => setResiInput(e.target.value)}
               placeholder="Masukkan nomor resi"

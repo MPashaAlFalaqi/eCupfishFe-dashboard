@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "@/components/Toast";
-import { Flag, MessageSquare, Star, ThumbsUp } from "lucide-react";
+import { Flag, MessageSquare, Star, ThumbsUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import Topbar from "@/components/Topbar";
 import StatCard from "@/components/StatCard";
 import FilterBar, { usePeriode } from "@/components/FilterBar";
@@ -11,6 +11,7 @@ import Stars from "@/components/Stars";
 import Modal from "@/components/Modal";
 import { Button, Card, Pill } from "@/components/ui";
 import { useDashboardData } from "@/components/DashboardDataProvider";
+import ResetDataButton from "@/components/ResetDataButton";
 import type { Ulasan } from "@/lib/types";
 
 const initials = (n: string) =>
@@ -31,6 +32,8 @@ export default function UlasanView({ data }: { data?: Ulasan[] }) {
   const [balas, setBalas] = useState<string | null>(null);
   const [teks, setTeks] = useState("");
   const [lapor, setLapor] = useState<Ulasan | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   const avg = items.length
     ? items.reduce((n, i) => n + i.bintang, 0) / items.length
@@ -56,6 +59,10 @@ export default function UlasanView({ data }: { data?: Ulasan[] }) {
       [i.nama, i.produk, i.komentar].some(v => v.toLowerCase().includes(k))
   );
 
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const kirim = (id: string) => {
     if (!teks.trim()) return;
     setUlasan(s =>
@@ -71,6 +78,7 @@ export default function UlasanView({ data }: { data?: Ulasan[] }) {
       <Topbar
         title="Ulasan & Rating"
         subtitle="Tanggapi ulasan pembeli untuk membangun kepercayaan toko"
+        action={<ResetDataButton label="Reset Data" />}
       />
       <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -132,7 +140,7 @@ export default function UlasanView({ data }: { data?: Ulasan[] }) {
       )}
       <div className="space-y-3">
         <AnimatePresence initial={false}>
-          {rows.map(u => (
+          {paginatedRows.map(u => (
             <motion.div
               key={u.id}
               layout
@@ -236,6 +244,78 @@ export default function UlasanView({ data }: { data?: Ulasan[] }) {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Bar Pagination */}
+      {rows.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-100 bg-white p-3 text-xs text-primary-600 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span>
+              Menampilkan <b>{(currentPage - 1) * pageSize + 1}</b>–
+              <b>{Math.min(currentPage * pageSize, rows.length)}</b> dari{" "}
+              <b>{rows.length}</b> ulasan
+            </span>
+            <div className="ml-2 flex items-center gap-1.5">
+              <span className="text-[11px] text-primary-400">Baris:</span>
+              <select
+                value={pageSize}
+                onChange={e => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="rounded border border-primary-200 bg-white px-2 py-0.5 text-xs font-semibold text-primary-700 outline-none"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage(1)}
+              disabled={currentPage === 1}
+              className="grid h-7 w-7 place-items-center rounded-lg border border-primary-200 bg-white text-primary-600 hover:bg-primary-50 disabled:opacity-40"
+              title="Halaman Pertama"
+            >
+              <ChevronsLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="grid h-7 w-7 place-items-center rounded-lg border border-primary-200 bg-white text-primary-600 hover:bg-primary-50 disabled:opacity-40"
+              title="Halaman Sebelumnya"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            <span className="px-2 text-xs font-semibold text-primary-700">
+              Hal {currentPage} dari {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="grid h-7 w-7 place-items-center rounded-lg border border-primary-200 bg-white text-primary-600 hover:bg-primary-50 disabled:opacity-40"
+              title="Halaman Berikutnya"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="grid h-7 w-7 place-items-center rounded-lg border border-primary-200 bg-white text-primary-600 hover:bg-primary-50 disabled:opacity-40"
+              title="Halaman Terakhir"
+            >
+              <ChevronsRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
       <Modal
         open={!!lapor}
         onClose={() => setLapor(null)}

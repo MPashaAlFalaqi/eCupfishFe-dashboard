@@ -32,7 +32,6 @@ const menu = [
   { href: "/pengiriman", label: "Pengiriman", icon: Truck },
   { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/klaim", label: "Klaim Pembeli", icon: ShieldAlert },
-  { href: "/ulasan", label: "Ulasan", icon: Star },
   { href: "/laporan", label: "Laporan Keuangan", icon: Wallet },
   { href: "/pembayaran", label: "Pembayaran Masuk", icon: Landmark },
 ];

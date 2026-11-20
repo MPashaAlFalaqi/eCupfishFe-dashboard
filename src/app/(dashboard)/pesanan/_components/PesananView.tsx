@@ -10,6 +10,7 @@ import DataTable, { type Column } from "@/components/DataTable";
 import { Button, Card, Pill } from "@/components/ui";
 import { rp } from "@/lib/format";
 import { useDashboardData } from "@/components/DashboardDataProvider";
+import ResetDataButton from "@/components/ResetDataButton";
 import type { Pesanan, StatusPesanan } from "@/lib/types";
 import DetailPesananModal from "./DetailPesananModal";
 
@@ -31,7 +32,13 @@ export const tone = {
 } as const;
 
 export default function PesananView({ data }: { data?: Pesanan[] }) {
-  const { pesanan, updateStatusPesanan } = useDashboardData();
+  const {
+    pesanan,
+    updateStatusPesanan,
+    konfirmasiBayarPesanan,
+    kirimPesanan,
+    selesaikanPesanan,
+  } = useDashboardData();
   const items = pesanan.length > 0 ? pesanan : data ?? [];
   const toast = useToast();
   const [status, setStatusF] = useState("");
@@ -51,13 +58,23 @@ export default function PesananView({ data }: { data?: Pesanan[] }) {
   );
 
   const msg: Partial<Record<StatusPesanan, string>> = {
+    Dibayar: "Pembayaran dikonfirmasi & masuk ke daftar siap kemas",
     Dikemas: "Pesanan diterima & masuk ke daftar Pengiriman",
-    Dikirim: "Pesanan ditandai dikirim & resi diperbarui",
+    Dikirim: "Pesanan ditandai dikirim & nomor resi diterbitkan",
+    Selesai: "Pesanan selesai, dana diteruskan ke saldo & ulasan dibuat",
     Dibatalkan: "Pesanan dibatalkan",
   };
 
-  const setStatus = (id: string, nextStatus: StatusPesanan, _resi?: string) => {
-    updateStatusPesanan(id, nextStatus);
+  const setStatus = (id: string, nextStatus: StatusPesanan, resi?: string) => {
+    if (nextStatus === "Dibayar") {
+      konfirmasiBayarPesanan(id);
+    } else if (nextStatus === "Dikirim") {
+      kirimPesanan(id, resi || "");
+    } else if (nextStatus === "Selesai") {
+      selesaikanPesanan(id);
+    } else {
+      updateStatusPesanan(id, nextStatus, resi);
+    }
     if (msg[nextStatus]) toast(msg[nextStatus]!);
   };
 
@@ -102,8 +119,9 @@ export default function PesananView({ data }: { data?: Pesanan[] }) {
   return (
     <>
       <Topbar
-        title="Pesanan"
-        subtitle="Semua pesanan dari pembelian langsung dan lelang"
+        title="Semua Pesanan"
+        subtitle="Kelola status pesanan dari pembelian langsung dan hasil lelang cupang"
+        action={<ResetDataButton label="Reset Data" />}
       />
       <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

@@ -12,6 +12,7 @@ import { rp } from "@/lib/format";
 import { rpRingkas } from "@/lib/laporan";
 import PenjualanChart from "./_components/PenjualanChart";
 import LelangBerlangsung from "./_components/LelangBerlangsung";
+import ResetDataButton from "@/components/ResetDataButton";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -72,14 +73,20 @@ export default function DashboardPage() {
   const { ikan, pesanan, pengiriman, pembayaran, sesi, klaim } = useDashboardData();
 
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    const adminData = localStorage.getItem("admin_data");
+    const token =
+      localStorage.getItem("admin_token") || localStorage.getItem("ecf_token");
+    const adminData =
+      localStorage.getItem("admin_data") || localStorage.getItem("ecf_user");
 
     if (!token) {
       router.push("/login");
     } else if (adminData) {
-      const parsedData = JSON.parse(adminData);
-      setNamaAdmin(parsedData.name);
+      try {
+        const parsedData = JSON.parse(adminData);
+        if (parsedData?.name) {
+          setNamaAdmin(parsedData.name);
+        }
+      } catch {}
     }
   }, [router]);
 
@@ -134,6 +141,7 @@ export default function DashboardPage() {
       <Topbar
         title={`Selamat pagi, ${namaAdmin} 👋`}
         subtitle={`${tanggal} · ${tugasMenunggu} tugas menunggu tindakan`}
+        action={<ResetDataButton label="Reset Data" />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

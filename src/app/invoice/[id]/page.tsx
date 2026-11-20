@@ -6,7 +6,8 @@ import { rp } from "@/lib/format";
 import { pesananList } from "@/lib/mock-data";
 
 export default function InvoicePage({ params }: { params: { id: string } }) {
-  const p = pesananList.find(x => x.id === `#${params.id}`);
+  const targetId = params.id.startsWith("#") ? params.id : `#${params.id}`;
+  const p = pesananList.find(x => x.id === targetId);
   if (!p) notFound();
   const sub = p.hargaSatuan * p.jumlah, total = sub + p.ongkir;
   return (

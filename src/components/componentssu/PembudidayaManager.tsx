@@ -22,7 +22,11 @@ import {
   Building,
   CreditCard,
   Eye,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
 import { Pembudidaya } from "@/data/mockData";
 
@@ -50,6 +54,8 @@ export const PembudidayaManager: React.FC<PembudidayaManagerProps> = ({
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(5);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [suspendModalMitra, setSuspendModalMitra] = useState<Pembudidaya | null>(null);
   const [suspendReason, setSuspendReason] = useState<string>("");
@@ -92,6 +98,12 @@ export const PembudidayaManager: React.FC<PembudidayaManagerProps> = ({
         return 0;
       });
   }, [mitraList, filterStatus, searchQuery, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / pageSize));
+  const displayedMitra = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredList.slice(start, start + pageSize);
+  }, [filteredList, currentPage, pageSize]);
 
   // Counts
   const countAll = mitraList.length;
@@ -195,22 +207,20 @@ export const PembudidayaManager: React.FC<PembudidayaManagerProps> = ({
           <button
             type="button"
             onClick={() => setFilterStatus("all")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-              filterStatus === "all"
-                ? "bg-[#0B1A30] text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${filterStatus === "all"
+              ? "bg-[#0B1A30] text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
           >
             Semua Mitra ({countAll})
           </button>
           <button
             type="button"
             onClick={() => setFilterStatus("menunggu_verifikasi")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              filterStatus === "menunggu_verifikasi"
-                ? "bg-amber-500 text-white"
-                : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${filterStatus === "menunggu_verifikasi"
+              ? "bg-amber-500 text-white"
+              : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
+              }`}
           >
             <span className="w-2 h-2 rounded-full bg-amber-400"></span>
             Menunggu Verifikasi ({countPending})
@@ -218,22 +228,20 @@ export const PembudidayaManager: React.FC<PembudidayaManagerProps> = ({
           <button
             type="button"
             onClick={() => setFilterStatus("aktif")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-              filterStatus === "aktif"
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${filterStatus === "aktif"
+              ? "bg-emerald-600 text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
           >
             Mitra Aktif ({countActive})
           </button>
           <button
             type="button"
             onClick={() => setFilterStatus("ditangguhkan")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-              filterStatus === "ditangguhkan"
-                ? "bg-rose-600 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${filterStatus === "ditangguhkan"
+              ? "bg-rose-600 text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
           >
             Ditangguhkan ({countSuspended})
           </button>
@@ -284,7 +292,7 @@ export const PembudidayaManager: React.FC<PembudidayaManagerProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {filteredList.map((mitra) => (
+              {displayedMitra.map((mitra) => (
                 <tr
                   key={mitra.id}
                   className="hover:bg-slate-50/80 transition-colors group"
@@ -459,6 +467,74 @@ export const PembudidayaManager: React.FC<PembudidayaManagerProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Bar Pagination */}
+        {filteredList.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-500 bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <span>
+                Menampilkan <b className="text-slate-800">{(currentPage - 1) * pageSize + 1}</b>–
+                <b className="text-slate-800">{Math.min(currentPage * pageSize, filteredList.length)}</b> dari{" "}
+                <b className="text-slate-800">{filteredList.length}</b> pembudidaya
+              </span>
+              <div className="ml-2 flex items-center gap-1.5">
+                <span className="text-[11px] text-slate-400">Baris:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-700 outline-none"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <span className="px-2 text-xs font-semibold text-slate-700">
+                Hal {currentPage} dari {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              >
+                <ChevronsRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Detail Mitra */}
@@ -491,13 +567,12 @@ export const PembudidayaManager: React.FC<PembudidayaManagerProps> = ({
             <div className="p-6 overflow-y-auto space-y-6 text-xs text-slate-700">
               {/* Status Banner */}
               <div
-                className={`p-3 rounded-xl border flex items-center justify-between ${
-                  selectedMitra.status === "aktif"
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                    : selectedMitra.status === "menunggu_verifikasi"
+                className={`p-3 rounded-xl border flex items-center justify-between ${selectedMitra.status === "aktif"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  : selectedMitra.status === "menunggu_verifikasi"
                     ? "bg-amber-50 border-amber-200 text-amber-800"
                     : "bg-rose-50 border-rose-200 text-rose-800"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 shrink-0" />

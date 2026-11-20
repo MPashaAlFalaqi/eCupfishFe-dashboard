@@ -3,6 +3,7 @@ import { Inbox, Eye, CheckCircle2, XCircle } from "lucide-react";
 import Topbar from "@/components/Topbar";
 import StatCard from "@/components/StatCard";
 import { useDashboardData } from "@/components/DashboardDataProvider";
+import ResetDataButton from "@/components/ResetDataButton";
 import KlaimTable from "./_components/KlaimTable";
 
 export default function KlaimPage() {
@@ -15,7 +16,8 @@ export default function KlaimPage() {
     <>
       <Topbar
         title="Klaim Pembeli"
-        subtitle="Tinjau klaim dan bukti dari pembeli"
+        subtitle="Tinjau klaim garansi dan bukti ikan dari pembeli"
+        action={<ResetDataButton label="Reset Data" />}
       />
       <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

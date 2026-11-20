@@ -19,6 +19,7 @@ import {
 } from "@/lib/periode";
 import { useDashboardData } from "@/components/DashboardDataProvider";
 import ExportMenu from "./ExportMenu";
+import ResetDataButton from "@/components/ResetDataButton";
 
 const DAY = 86400000;
 const tambah = (d: Date, n: number) =>
@@ -291,10 +292,13 @@ export default function LaporanView() {
             : "Tanggal awal harus sebelum tanggal akhir"
         }
         action={
-          <ExportMenu
-            rows={csv}
-            fileName={`laporan-keuangan-${isoTanggal(mulai)}_${isoTanggal(akhir)}.csv`}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ResetDataButton label="Reset Data" />
+            <ExportMenu
+              rows={csv}
+              fileName={`laporan-keuangan-${isoTanggal(mulai)}_${isoTanggal(akhir)}.csv`}
+            />
+          </div>
         }
       />
 
